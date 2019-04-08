@@ -243,30 +243,37 @@ func (c Config) CreateDSN() string {
 		return c.GetDSN()
 	}
 
-	var queryString string
-	var qParam = "?"
-	if len(c.GetSSLMode()) > 0 {
-		queryString = fmt.Sprintf("%s%ssslmode=%s", queryString, qParam, url.QueryEscape(c.GetSSLMode()))
-		qParam = "&"
-	}
-
-	if len(c.GetSchema()) >0 {
-		queryString = fmt.Sprintf("%s%ssearch_path=%s", queryString, qParam, url.QueryEscape(c.GetSchema()))
-		qParam = "&"
-	}
-
-	var port string
+	var host string
 	if len(c.GetPort()) > 0 {
-		port = fmt.Sprintf(":%s", c.GetPort())
+		host = fmt.Sprintf("%s:%s", c.GetHost(), c.GetPort())
+	} else {
+		host = c.GetHost()
 	}
 
-	if len(c.GetUsername()) > 0 {
-		if len(c.GetPassword()) > 0 {
-			return fmt.Sprintf("postgres://%s:%s@%s%s/%s%s", url.QueryEscape(c.GetUsername()), url.QueryEscape(c.GetPassword()), c.GetHost(), port, c.GetDatabase(), queryString)
-		}
-		return fmt.Sprintf("postgres://%s@%s%s/%s%s", url.QueryEscape(c.GetUsername()), c.GetHost(), port, c.GetDatabase(), queryString)
+	dsn := &url.URL{
+		Scheme: "postgres",
+		Host:   host,
+		Path:   c.GetDatabase(),
 	}
-	return fmt.Sprintf("postgres://%s%s/%s%s", c.GetHost(), port, c.GetDatabase(), queryString)
+
+	if len(c.Username) > 0 {
+		if len(c.Password) > 0 {
+			dsn.User = url.UserPassword(c.Username, c.Password)
+		} else {
+			dsn.User = url.User(c.Username)
+		}
+	}
+
+	queryArgs := url.Values{}
+	if len(c.SSLMode) > 0 {
+		queryArgs.Add("sslmode", c.SSLMode)
+	}
+	if len(c.Schema) > 0 {
+		queryArgs.Add("search_path", c.Schema)
+	}
+
+	dsn.RawQuery = queryArgs.Encode()
+	return dsn.String()
 }
 
 // Resolve creates a DSN and reparses it, in case some values need to be coalesced.
