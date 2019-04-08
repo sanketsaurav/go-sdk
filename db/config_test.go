@@ -116,3 +116,19 @@ func TestConfigResolve(t *testing.T) {
 	assert.NotNil(resolved)
 	assert.Equal("bar", resolved.Host)
 }
+
+func TestSchemaIsSearchPath(t *testing.T){
+	assert := assert.New(t)
+	cfg := MustNewConfigFromEnv()
+	cfg.Schema = "information_schema"
+	conn, err := NewFromConfig(cfg)
+	assert.Nil(err)
+
+	err = conn.Open()
+	assert.Nil(err)
+	defer conn.Close()
+
+	worked, err := conn.Query("Select * from schemata").Any()
+	assert.Nil(err)
+	assert.True(worked, "Unable to query schemata from the search_path")
+}
