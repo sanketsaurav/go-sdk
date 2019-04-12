@@ -193,7 +193,7 @@ func (c Config) GetDatabase(inherited ...string) string {
 
 // GetSchema returns the connection schema or a default.
 func (c Config) GetSchema(inherited ...string) string {
-	return configutil.CoalesceString(c.Schema, "", inherited...)
+	return configutil.CoalesceString(c.Schema, DefaultSchema, inherited...)
 }
 
 // GetUsername returns the connection username or a default.

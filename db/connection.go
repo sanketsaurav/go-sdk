@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"sync"
 	"time"
 
@@ -132,6 +133,15 @@ func (dbc *Connection) WithStatementInterceptor(interceptor StatementInterceptor
 // StatementInterceptor returns the statement interceptor.
 func (dbc *Connection) StatementInterceptor() StatementInterceptor {
 	return dbc.statementInterceptor
+}
+
+// DefaultSchema returns the schema that this connection has at the front of its search_path. If none is specified in
+// the config, this will be 'public'
+func (dbc *Connection) DefaultSchema() string {
+	if dbc.config == nil || strings.TrimSpace(dbc.config.Schema) == "" {
+		return DefaultSchema
+	}
+	return dbc.config.Schema
 }
 
 // Connection returns the underlying driver connection.
