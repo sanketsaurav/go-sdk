@@ -19,7 +19,8 @@ const (
 	DefaultDatabase = "postgres"
 
 	// DefaultSchema is the default schema at the head of your search path. Postgres automatically sets your search_path
-	// to public unless its configured differently on your USER. For SDK purposes
+	// to public unless its configured differently on your USER. For SDK purposes we force use of public unless you configure
+	// your connection otherwise by setting Schema in your config or SETing your search_path.
 	DefaultSchema = "public"
 
 	// SSLModeDisable is an ssl mode.
