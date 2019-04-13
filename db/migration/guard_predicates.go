@@ -60,13 +60,13 @@ func ConstraintNotExists(tableName, constraintName string) GuardFunc {
 		PredicateConstraintExists, tableName, constraintName)
 }
 
-// ConstraintExists returns a guard that ensures a constraint exists
+// ConstraintExistsInSchema returns a guard that ensures a constraint exists
 func ConstraintExistsInSchema(schemaName, tableName, constraintName string) GuardFunc {
 	return GuardPredicate3(fmt.Sprintf("Check constraint %s exists on table %s.%s", constraintName, schemaName, tableName),
 		PredicateConstraintExistsInSchema, schemaName, tableName, constraintName)
 }
 
-// ConstraintExists returns a guard that ensures a constraint does not exist
+// ConstraintNotExistsInSchema returns a guard that ensures a constraint does not exist
 func ConstraintNotExistsInSchema(schemaName, tableName, constraintName string) GuardFunc {
 	return GuardNotPredicate3(fmt.Sprintf("Check constraint %s does not exist on table %s.%s", constraintName, schemaName, tableName),
 		PredicateConstraintExistsInSchema, schemaName, tableName, constraintName)
