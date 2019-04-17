@@ -932,7 +932,7 @@ func (i *Invocation) finish(statement string, r interface{}, err error) error {
 	if r != nil {
 		err = exception.Nest(err, exception.New(r))
 	}
-	if i.conn.log != nil {
+	if i.conn.log != nil && !IsSkipQueryLogging(i.context) {
 		i.conn.log.Trigger(
 			logger.NewQueryEvent(statement, time.Now().UTC().Sub(i.startTime)).
 				WithUsername(i.conn.config.GetUsername()).
