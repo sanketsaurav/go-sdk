@@ -94,8 +94,6 @@ func TestConfigValidateProduction(t *testing.T) {
 	assert.True(IsUsernameUnset(Config{}.ValidateProduction()))
 	assert.True(IsPasswordUnset(Config{Username: "foo"}.ValidateProduction()))
 	assert.True(IsUnsafeSSLMode(Config{Username: "foo", Password: "bar", SSLMode: SSLModeDisable}.ValidateProduction()))
-	assert.True(IsUnsafeSSLMode(Config{Username: "foo", Password: "bar", SSLMode: SSLModeAllow}.ValidateProduction()))
-	assert.True(IsUnsafeSSLMode(Config{Username: "foo", Password: "bar", SSLMode: SSLModePrefer}.ValidateProduction()))
 	assert.True(IsUnsafeSSLMode(Config{Username: "foo", Password: "bar", SSLMode: "NOT A REAL MODE"}.ValidateProduction()))
 }
 

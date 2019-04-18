@@ -26,12 +26,15 @@ const (
 	// SSLModeDisable is an ssl mode.
 	// Postgres Docs: "I don't care about security, and I don't want to pay the overhead of encryption."
 	SSLModeDisable = "disable"
+
 	// SSLModeAllow is an ssl mode.
 	// Postgres Docs: "I don't care about security, but I will pay the overhead of encryption if the server insists on it."
-	SSLModeAllow = "allow"
+	// SSLModeAllow = "allow" -- "allow" while valid in postgres is not currently supported by go's lib/pq
+
 	// SSLModePrefer is an ssl mode.
 	// Postgres Docs: "I don't care about encryption, but I wish to pay the overhead of encryption if the server supports it"
-	SSLModePrefer = "prefer"
+	// SSLModePrefer = "prefer" -- "prefer" while valid in postgres, is not currently supported by go's lib/pq
+
 	// SSLModeRequire is an ssl mode.
 	// Postgres Docs: "I want my data to be encrypted, and I accept the overhead. I trust that the network will make sure I always connect to the server I want."
 	SSLModeRequire = "require"
