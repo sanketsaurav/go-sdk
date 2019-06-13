@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	_ Cache = (*LocalCache)(nil)
+	_ Cache  = (*LocalCache)(nil)
+	_ Locker = (*LocalCache)(nil)
 )
 
 // NewLocalCache returns a new LocalLocalCache.
