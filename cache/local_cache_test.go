@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -11,19 +12,22 @@ import (
 type itemKey struct{}
 type altItemKey struct{}
 
-func TestCache(t *testing.T) {
+func TestLocalCache(t *testing.T) {
 	assert := assert.New(t)
 
-	c := New()
-	defer c.Close()
+	c := NewLocalCache()
 
 	c.Set(itemKey{}, "foo")
+
+	assert.True(c.Has(itemKey{}))
+	assert.False(c.Has(altItemKey{}))
 
 	found, ok := c.Get(itemKey{})
 	assert.True(ok)
 	assert.Equal("foo", found)
 
 	c.Set(itemKey{}, "bar")
+	assert.True(c.Has(itemKey{}))
 
 	found, ok = c.Get(itemKey{})
 	assert.True(ok)
@@ -33,6 +37,14 @@ func TestCache(t *testing.T) {
 	found, ok = c.Get(itemKey{})
 	assert.False(ok)
 	assert.Nil(found)
+
+	c.Set(itemKey{}, "bar", OptValueTimestamp(time.Now().UTC().Add(-time.Hour)))
+	assert.True(c.Has(itemKey{}))
+
+	stats := c.Stats()
+	assert.Equal(1, stats.Count)
+	assert.NotZero(stats.MaxAge)
+	assert.NotZero(stats.SizeBytes)
 }
 
 func try(action func()) (err error) {
@@ -46,22 +58,20 @@ func try(action func()) (err error) {
 	return
 }
 
-func TestCacheKeyPanic(t *testing.T) {
+func TestLocalCacheKeyPanic(t *testing.T) {
 	assert := assert.New(t)
 
-	c := New()
-	defer c.Close()
+	c := NewLocalCache()
 
 	assert.NotNil(try(func() {
 		c.Set("foo", "bar")
 	}))
 }
 
-func TestCacheSweep(t *testing.T) {
+func TestLocalCacheSweep(t *testing.T) {
 	assert := assert.New(t)
 
-	c := New()
-	defer c.Close()
+	c := NewLocalCache()
 
 	var didSweep, didRemove bool
 	c.Set(itemKey{}, "foo",
@@ -86,7 +96,7 @@ func TestCacheSweep(t *testing.T) {
 	assert.True(ok)
 	assert.Equal("bar", found)
 
-	c.Sweep()
+	c.Sweep(context.Background())
 
 	found, ok = c.Get(itemKey{})
 	assert.False(ok)
@@ -99,11 +109,10 @@ func TestCacheSweep(t *testing.T) {
 	assert.Equal("bar", found)
 }
 
-func TestCacheStartSweeping(t *testing.T) {
+func TestLocalCacheStartSweeping(t *testing.T) {
 	assert := assert.New(t)
 
-	c := New(OptSweepInterval(time.Millisecond))
-	defer c.Close()
+	c := NewLocalCache(OptLocalCacheSweepInterval(time.Millisecond))
 
 	didSweep := make(chan struct{})
 	c.Set(itemKey{}, "a value",
@@ -117,12 +126,24 @@ func TestCacheStartSweeping(t *testing.T) {
 	assert.True(ok)
 	assert.Equal("a value", found)
 
-	go c.StartSweeping()
-	<-c.SweepStarted
+	c.Set(altItemKey{}, "bar",
+		OptValueTTL(time.Minute),
+	)
+
+	found, ok = c.Get(altItemKey{})
+	assert.True(ok)
+	assert.Equal("bar", found)
+
+	go c.Start()
+	<-c.NotifyStarted()
+	defer c.Stop()
 	<-didSweep
 
 	found, ok = c.Get(itemKey{})
 	assert.False(ok)
 	assert.Nil(found)
 
+	found, ok = c.Get(altItemKey{})
+	assert.True(ok)
+	assert.Equal("bar", found)
 }
