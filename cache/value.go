@@ -21,15 +21,8 @@ func OptValueTimestamp(t time.Time) ValueOption {
 	}
 }
 
-// OptValueOnSweep sets the on sweep handler.
-func OptValueOnSweep(handler func()) ValueOption {
-	return func(v *Value) {
-		v.OnSweep = handler
-	}
-}
-
 // OptValueOnRemove sets the on remove handler.
-func OptValueOnRemove(handler func()) ValueOption {
+func OptValueOnRemove(handler func(RemovalReason)) ValueOption {
 	return func(v *Value) {
 		v.OnRemove = handler
 	}
@@ -41,6 +34,5 @@ type Value struct {
 	Key       interface{}
 	Value     interface{}
 	TTL       time.Duration
-	OnRemove  func()
-	OnSweep   func()
+	OnRemove  func(RemovalReason)
 }

@@ -81,12 +81,12 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 	lc.Lock()
 	now := time.Now().UTC()
 	var keysToRemove []interface{}
-	var handlers []func()
+	var handlers []func(RemovalReason)
 	for key, value := range lc.Data {
 		if now.After(value.Timestamp.Add(value.TTL)) {
 			keysToRemove = append(keysToRemove, key)
-			if value.OnSweep != nil {
-				handlers = append(handlers, value.OnSweep)
+			if value.OnRemove != nil {
+				handlers = append(handlers, value.OnRemove)
 			}
 		}
 	}
@@ -97,7 +97,7 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 
 	// call the handlers outside the critical section.
 	for _, handler := range handlers {
-		handler()
+		handler(ExpiredTTL)
 	}
 	return nil
 }
@@ -170,7 +170,7 @@ func (lc *LocalCache) Remove(key interface{}) (value interface{}, hit bool) {
 	hit = true
 
 	if valueData.OnRemove != nil {
-		valueData.OnRemove()
+		valueData.OnRemove(Removed)
 	}
 	delete(lc.Data, key)
 	return
