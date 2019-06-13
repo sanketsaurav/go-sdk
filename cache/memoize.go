@@ -8,24 +8,36 @@ import (
 
 // Memoize returns a new pull through cache.
 func Memoize(action func(interface{}) (interface{}, error), options ...MemoizeOption) *Memoized {
-	return &Memoized{
+	m := Memoized{
 		Action: action,
-		TTL:    5 * time.Second,
 	}
+	for _, opt := range options {
+		opt(&m)
+	}
+	return &m
 }
 
 // MemoizeOption is an option for memoized functions.
 type MemoizeOption func(*Memoized)
 
+// OptMemoizeTTL sets the memoization ttl.
+func OptMemoizeTTL(d time.Duration) MemoizeOption {
+	return func(m *Memoized) {
+		m.TTL = d
+	}
+}
+
 // Memoized is a cache that memoizes the result of a function.
 type Memoized struct {
-	sync.RWMutex
+	sync.Mutex
 	TTL    time.Duration
 	Action func(interface{}) (interface{}, error)
 	Values []*MemoizedValue
 }
 
 // Call returns a cached response or calls the action with a given argument if it's expired.
+// It uses a list and iterates over the values in the list to find the value.
+// As a result, it sucks for high cardinality
 func (m *Memoized) Call(args interface{}) (interface{}, error) {
 	if args == nil {
 		panic("nil args")
@@ -35,28 +47,41 @@ func (m *Memoized) Call(args interface{}) (interface{}, error) {
 		panic("args is not comparable")
 	}
 
-	m.RLock()
+	m.Lock()
+	defer m.Unlock()
+
+	now := time.Now().UTC()
 	for _, value := range m.Values {
+		// if we have a matching args in the set
 		if value.Args == args {
-			m.RUnlock()
-			return value.Call(args, m.Action)
+			// if there isn't a ttl, or we we have a ttl and the value isn't expired ...
+			delta := now.Sub(value.Timestamp)
+			if m.TTL == 0 || (m.TTL != 0 && delta < m.TTL) {
+				return value.Response, value.Err
+			}
+
+			// refresh the value
+			value.Response, value.Err = m.Action(args)
+			value.Timestamp = time.Now().UTC()
+			return value.Response, value.Err
 		}
 	}
-	return nil, nil
+
+	// add value
+	val := MemoizedValue{
+		Timestamp: time.Now().UTC(),
+		Args:      args,
+	}
+
+	val.Response, val.Err = m.Action(args)
+	m.Values = append(m.Values, &val)
+	return val.Response, val.Err
 }
 
 // MemoizedValue is a specific invocation with an argument.
 type MemoizedValue struct {
-	sync.Mutex
-
+	Timestamp time.Time
 	Args      interface{}
 	Response  interface{}
 	Err       error
-	Timestamp time.Duration
-	TTL       time.Duration
-}
-
-// Call returns either a cached value or a new call.
-func (m *MemoizedValue) Call(args interface{}, action func(interface{}) (interface{}, error)) (interface{}, error) {
-	return nil, nil
 }
