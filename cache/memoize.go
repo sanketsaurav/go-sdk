@@ -39,12 +39,16 @@ type Memoized struct {
 // It uses a list and iterates over the values in the list to find the value.
 // As a result, it sucks for high cardinality
 func (m *Memoized) Call(args interface{}) (interface{}, error) {
+	if m.Action == nil {
+		panic("memoized: nil action")
+	}
+
 	if args == nil {
-		panic("nil args")
+		panic("memoized: nil args")
 	}
 
 	if !reflect.TypeOf(args).Comparable() {
-		panic("args is not comparable")
+		panic("memoized: args is not comparable")
 	}
 
 	m.Lock()

@@ -105,15 +105,15 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 // Set adds a LocalCache item.
 func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 	if key == nil {
-		panic("nil key")
+		panic("local cache: nil key")
 	}
 
 	if !reflect.TypeOf(key).Comparable() {
-		panic("key is not comparable")
+		panic("local cache: key is not comparable")
 	}
 
 	if reflect.TypeOf(key).Kind() != reflect.Struct {
-		panic("key is not a struct; consider using a key type to leverage the compiler for key checking")
+		panic("local cache: key is not a struct; consider using a key type to leverage the compiler for key checking")
 	}
 
 	v := Value{
