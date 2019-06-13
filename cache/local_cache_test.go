@@ -7,6 +7,11 @@ import (
 	"time"
 
 	"github.com/blend/go-sdk/assert"
+	"github.com/blend/go-sdk/graceful"
+)
+
+var (
+	_ graceful.Graceful = (*LocalCache)(nil)
 )
 
 type itemKey struct{}
