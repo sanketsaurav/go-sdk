@@ -18,6 +18,7 @@ var (
 func NewLocalCache(options ...LocalCacheOption) *LocalCache {
 	c := LocalCache{
 		Data: make(map[interface{}]*Value),
+		LRU:  NewLRUQueue(),
 	}
 	for _, opt := range options {
 		opt(&c)
@@ -39,6 +40,7 @@ func OptLocalCacheSweepInterval(d time.Duration) LocalCacheOption {
 type LocalCache struct {
 	sync.RWMutex
 	Data    map[interface{}]*Value
+	LRU     *LRUQueue
 	Sweeper *async.Interval
 }
 
@@ -82,14 +84,16 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 	now := time.Now().UTC()
 	var keysToRemove []interface{}
 	var handlers []func(RemovalReason)
-	for key, value := range lc.Data {
-		if now.After(value.Timestamp.Add(value.TTL)) {
-			keysToRemove = append(keysToRemove, key)
-			if value.OnRemove != nil {
-				handlers = append(handlers, value.OnRemove)
+	lc.LRU.ConsumeUntil(func(v *Value) bool {
+		if now.Sub(v.Timestamp) >= v.TTL {
+			keysToRemove = append(keysToRemove, v.Key)
+			if v.OnRemove != nil {
+				handlers = append(handlers, v.OnRemove)
 			}
+			return true
 		}
-	}
+		return false
+	})
 	for _, key := range keysToRemove {
 		delete(lc.Data, key)
 	}
@@ -130,6 +134,7 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 	if lc.Data == nil {
 		lc.Data = make(map[interface{}]*Value)
 	}
+	lc.LRU.Enqueue(&v)
 	lc.Data[key] = &v
 	lc.Unlock()
 }
@@ -165,10 +170,8 @@ func (lc *LocalCache) Remove(key interface{}) (value interface{}, hit bool) {
 	if !ok {
 		return
 	}
-
 	value = valueData.Value
 	hit = true
-
 	if valueData.OnRemove != nil {
 		valueData.OnRemove(Removed)
 	}
