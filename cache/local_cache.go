@@ -135,12 +135,13 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 	}
 
 	// update the LRU queue
-	if _, ok := lc.Data[key]; ok {
+	if value, ok := lc.Data[key]; ok {
+		*value = v
 		lc.LRU.Fix(&v)
 	} else {
+		lc.Data[key] = &v
 		lc.LRU.Push(&v)
 	}
-	lc.Data[key] = &v
 	lc.Unlock()
 }
 
@@ -170,12 +171,10 @@ func (lc *LocalCache) Has(key interface{}) (has bool) {
 func (lc *LocalCache) Remove(key interface{}) (value interface{}, hit bool) {
 	lc.Lock()
 	valueData, ok := lc.Data[key]
-	// update the LRU queue
 	if ok {
 		lc.LRU.Remove(key)
 	}
 	lc.Unlock()
-
 	if !ok {
 		return
 	}

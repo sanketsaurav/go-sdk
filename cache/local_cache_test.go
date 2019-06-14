@@ -44,7 +44,9 @@ func TestLocalCache(t *testing.T) {
 	assert.Equal("alt-bar", found)
 
 	c.Set(itemKey{}, "foo-2", OptValueTimestamp(t2))
+	assert.Equal(t2, c.Data[itemKey{}].Timestamp)
 	c.Set(altItemKey{}, "alt-bar-2", OptValueTimestamp(t3))
+	assert.Equal(t3, c.Data[altItemKey{}].Timestamp)
 
 	found, ok = c.Get(itemKey{})
 	assert.True(ok)
