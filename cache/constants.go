@@ -5,6 +5,6 @@ type RemovalReason int
 
 // RemovalReasons
 const (
-	ExpiredTTL RemovalReason = iota
-	Removed    RemovalReason = iota
+	Expired RemovalReason = iota
+	Removed RemovalReason = iota
 )

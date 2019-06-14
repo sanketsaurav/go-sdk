@@ -81,14 +81,13 @@ func (lc *LocalCache) NotifyStopped() <-chan struct{} {
 // outside holding the critical section.
 func (lc *LocalCache) Sweep(ctx context.Context) error {
 	lc.Lock()
-
 	now := time.Now().UTC()
 
 	var keysToRemove []interface{}
 	var handlers []func(RemovalReason)
 
 	lc.LRU.ConsumeUntil(func(v *Value) bool {
-		if now.Sub(v.Timestamp) >= v.TTL {
+		if !v.Expires.IsZero() && now.After(v.Expires) {
 			keysToRemove = append(keysToRemove, v.Key)
 			if v.OnRemove != nil {
 				handlers = append(handlers, v.OnRemove)
@@ -97,6 +96,7 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 		}
 		return false
 	})
+
 	for _, key := range keysToRemove {
 		delete(lc.Data, key)
 	}
@@ -104,7 +104,7 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 
 	// call the handlers outside the critical section.
 	for _, handler := range handlers {
-		handler(ExpiredTTL)
+		handler(Expired)
 	}
 	return nil
 }

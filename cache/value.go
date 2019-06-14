@@ -10,7 +10,14 @@ type ValueOption func(*Value)
 // OptValueTTL sets the ttl for the value.
 func OptValueTTL(d time.Duration) ValueOption {
 	return func(v *Value) {
-		v.TTL = d
+		v.Expires = v.Timestamp.Add(d)
+	}
+}
+
+// OptValueExpires sets the ttl for the value.
+func OptValueExpires(expires time.Time) ValueOption {
+	return func(v *Value) {
+		v.Expires = expires
 	}
 }
 
@@ -31,8 +38,8 @@ func OptValueOnRemove(handler func(RemovalReason)) ValueOption {
 // Value is a cached item.
 type Value struct {
 	Timestamp time.Time
+	Expires   time.Time
 	Key       interface{}
 	Value     interface{}
-	TTL       time.Duration
 	OnRemove  func(RemovalReason)
 }

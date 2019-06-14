@@ -99,7 +99,7 @@ func TestLocalCacheSweep(t *testing.T) {
 		OptValueTimestamp(time.Now().UTC().Add(-2*time.Minute)),
 		OptValueTTL(time.Minute),
 		OptValueOnRemove(func(reason RemovalReason) {
-			if reason == ExpiredTTL {
+			if reason == Expired {
 				didSweep = true
 			}
 		}),
@@ -138,7 +138,7 @@ func TestLocalCacheStartSweeping(t *testing.T) {
 	c.Set(itemKey{}, "a value",
 		OptValueTTL(time.Microsecond),
 		OptValueOnRemove(func(reason RemovalReason) {
-			if reason == ExpiredTTL {
+			if reason == Expired {
 				close(didSweep)
 			}
 		}),
