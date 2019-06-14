@@ -1,18 +1,15 @@
 package cache
 
-const (
-	ringBufferMinimumGrow     = 4
-	ringBufferShrinkThreshold = 32
-	ringBufferGrowFactor      = 200
-	ringBufferDefaultCapacity = 4
+import "sort"
+
+var (
+	_ LRU = (*LRUQueue)(nil)
 )
 
 // NewLRUQueue creates a new, empty, LRUQueue.
-func NewLRUQueue(values ...*Value) *LRUQueue {
+func NewLRUQueue() *LRUQueue {
 	return &LRUQueue{
-		array: values,
-		tail:  len(values) - 1,
-		size:  len(values),
+		array: make([]*Value, ringBufferDefaultCapacity),
 	}
 }
 
@@ -50,8 +47,8 @@ func (lru *LRUQueue) Clear() {
 	lru.size = 0
 }
 
-// Enqueue adds an element to the "back" of the LRUQueue.
-func (lru *LRUQueue) Enqueue(object *Value) {
+// Push adds an element to the "back" of the LRUQueue.
+func (lru *LRUQueue) Push(object *Value) {
 	if lru.size == len(lru.array) {
 		newCapacity := int(len(lru.array) * int(ringBufferGrowFactor/100))
 		if newCapacity < (len(lru.array) + ringBufferMinimumGrow) {
@@ -65,8 +62,8 @@ func (lru *LRUQueue) Enqueue(object *Value) {
 	lru.size++
 }
 
-// Dequeue removes the first (oldest) element from the LRUQueue.
-func (lru *LRUQueue) Dequeue() *Value {
+// Pop removes the first (oldest) element from the LRUQueue.
+func (lru *LRUQueue) Pop() *Value {
 	if lru.size == 0 {
 		return nil
 	}
@@ -97,6 +94,113 @@ func (lru *LRUQueue) PeekBack() *Value {
 	return lru.array[lru.tail-1]
 }
 
+// Fix updates the queue given an update to a specific value.
+func (lru *LRUQueue) Fix(value *Value) {
+	if lru.size == 0 {
+		return
+	}
+	if value == nil {
+		panic("lru queue; value is nil")
+	}
+
+	values := make([]*Value, lru.size)
+
+	var cursorValue *Value
+	var index int
+	if lru.head < lru.tail {
+		for cursor := lru.head; cursor < lru.tail; cursor++ {
+			cursorValue = lru.array[cursor]
+			if cursorValue.Key == value.Key {
+				values[index] = value
+			} else if cursorValue != nil {
+				values[index] = cursorValue
+			}
+			index++
+		}
+	} else {
+		for cursor := lru.head; cursor < len(lru.array); cursor++ {
+			cursorValue = lru.array[cursor]
+			if cursorValue.Key == value.Key {
+				values[index] = value
+			} else if cursorValue != nil {
+				values[index] = cursorValue
+			}
+			index++
+		}
+		for cursor := 0; cursor < lru.tail; cursor++ {
+			cursorValue = lru.array[cursor]
+			if cursorValue.Key == value.Key {
+				values[index] = value
+			} else if cursorValue != nil {
+				values[index] = cursorValue
+			}
+			index++
+		}
+	}
+
+	// sort and recreate
+	sort.Sort(LRUHeapValues(values))
+
+	lru.array = values
+	lru.head = 0
+	lru.tail = len(values)
+	lru.size = len(values)
+}
+
+// Remove removes an item from the queue by its key.
+func (lru *LRUQueue) Remove(key interface{}) {
+	if lru.size == 0 {
+		return
+	}
+
+	// set up a new values list
+	values := make([]*Value, lru.size-1)
+
+	var cursorValue *Value
+	var index int
+	if lru.head < lru.tail {
+		for cursor := lru.head; cursor < lru.tail; cursor++ {
+			cursorValue = lru.array[cursor]
+			if cursorValue.Key == key {
+				continue
+			}
+			values[index] = cursorValue
+			index++
+		}
+	} else {
+		for cursor := lru.head; cursor < len(lru.array); cursor++ {
+			cursorValue = lru.array[cursor]
+			if cursorValue.Key == key {
+				continue
+			}
+			values[index] = cursorValue
+			index++
+		}
+		for cursor := 0; cursor < lru.tail; cursor++ {
+			cursorValue = lru.array[cursor]
+			if cursorValue.Key == key {
+				continue
+			}
+			values[index] = cursorValue
+			index++
+		}
+	}
+
+	if len(values) == 0 {
+		lru.array = make([]*Value, ringBufferDefaultCapacity)
+		lru.head = 0
+		lru.tail = 0
+		lru.size = 0
+		return
+	}
+
+	// recreate
+	lru.array = values
+	lru.head = 0
+	lru.tail = len(values)
+	lru.size = len(values)
+}
+
 // ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
 func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
 	if lru.size == 0 {
@@ -105,11 +209,10 @@ func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
 
 	len := lru.Len()
 	for i := 0; i < len; i++ {
-		if consumer(lru.Peek()) {
-			lru.Dequeue()
+		if !consumer(lru.Peek()) {
 			return
 		}
-		return
+		lru.Pop()
 	}
 }
 
@@ -155,3 +258,10 @@ func arrayCopy(source []*Value, sourceIndex int, destination []*Value, destinati
 		destination[to] = source[from]
 	}
 }
+
+const (
+	ringBufferMinimumGrow     = 4
+	ringBufferShrinkThreshold = 32
+	ringBufferGrowFactor      = 200
+	ringBufferDefaultCapacity = 4
+)

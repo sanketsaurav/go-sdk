@@ -2,6 +2,10 @@ package cache
 
 import "container/heap"
 
+var (
+	_ LRU = (*LRUHeap)(nil)
+)
+
 // NewLRUHeap creates a new, empty, LRU Heap.
 func NewLRUHeap() *LRUHeap {
 	return &LRUHeap{}
@@ -11,7 +15,7 @@ func NewLRUHeap() *LRUHeap {
 // a whole new node object for each element (which saves GC churn).
 // Enqueue can be O(n), Dequeue can be O(1).
 type LRUHeap struct {
-	Values lruHeapValues
+	Values LRUHeapValues
 }
 
 // Len returns the length of the queue (as it is currently populated).
@@ -39,10 +43,10 @@ func (lrh *LRUHeap) Pop() *Value {
 }
 
 // Fix updates a value by key.
-func (lrh *LRUHeap) Fix(key interface{}, newValue *Value) {
+func (lrh *LRUHeap) Fix(newValue *Value) {
 	var i int
 	for index, value := range lrh.Values {
-		if value.Key == key {
+		if value.Key == newValue.Key {
 			i = index
 			break
 		}
@@ -51,8 +55,8 @@ func (lrh *LRUHeap) Fix(key interface{}, newValue *Value) {
 	heap.Fix(&lrh.Values, i)
 }
 
-// RemoveByKey removes a value by key.
-func (lrh *LRUHeap) RemoveByKey(key interface{}) {
+// Remove removes a value by key.
+func (lrh *LRUHeap) Remove(key interface{}) {
 	var i int
 	for index, value := range lrh.Values {
 		if value.Key == key {
@@ -72,7 +76,8 @@ func (lrh *LRUHeap) Peek() *Value {
 }
 
 // ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
-// The consumer should return `true` if it should continue processing.
+// The consumer should return `true` if it should remove the item and continue processing.
+// If `false` is returned, the current item will be left in place.
 func (lrh *LRUHeap) ConsumeUntil(consumer func(value *Value) bool) {
 	if len(lrh.Values) == 0 {
 		return
@@ -85,26 +90,4 @@ func (lrh *LRUHeap) ConsumeUntil(consumer func(value *Value) bool) {
 		}
 		lrh.Pop()
 	}
-}
-
-var (
-	_ heap.Interface = (*lruHeapValues)(nil)
-)
-
-type lruHeapValues []*Value
-
-func (lruv lruHeapValues) Len() int           { return len(lruv) }
-func (lruv lruHeapValues) Less(i, j int) bool { return lruv[i].Timestamp.Before(lruv[j].Timestamp) }
-func (lruv lruHeapValues) Swap(i, j int)      { lruv[i], lruv[j] = lruv[j], lruv[i] }
-
-func (lruv *lruHeapValues) Push(x interface{}) {
-	*lruv = append(*lruv, x.(*Value))
-}
-
-func (lruv *lruHeapValues) Pop() interface{} {
-	old := *lruv
-	n := len(old)
-	x := old[n-1]
-	*lruv = old[0 : n-1]
-	return x
 }
