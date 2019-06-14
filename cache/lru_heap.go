@@ -2,10 +2,6 @@ package cache
 
 import "container/heap"
 
-var (
-	emptyArray = make([]*Value, 0)
-)
-
 // NewLRUHeap creates a new, empty, LRU Heap.
 func NewLRUHeap() *LRUHeap {
 	return &LRUHeap{}
@@ -29,14 +25,66 @@ func (lrh *LRUHeap) Clear() {
 	lrh.Values = nil
 }
 
-// Enqueue adds an element to the "back" of the queue.
-func (lrh *LRUHeap) Enqueue(object *Value) {
+// Push adds an element to the heap.
+func (lrh *LRUHeap) Push(object *Value) {
 	heap.Push(&lrh.Values, object)
 }
 
-// Dequeue removes the first (oldest) element from the queue.
-func (lrh *LRUHeap) Dequeue() *Value {
+// Pop removes the first (oldest) element from the heap.
+func (lrh *LRUHeap) Pop() *Value {
+	if len(lrh.Values) == 0 {
+		return nil
+	}
 	return heap.Pop(&lrh.Values).(*Value)
+}
+
+// Fix updates a value by key.
+func (lrh *LRUHeap) Fix(key interface{}, newValue *Value) {
+	var i int
+	for index, value := range lrh.Values {
+		if value.Key == key {
+			i = index
+			break
+		}
+	}
+	lrh.Values[i] = newValue
+	heap.Fix(&lrh.Values, i)
+}
+
+// RemoveByKey removes a value by key.
+func (lrh *LRUHeap) RemoveByKey(key interface{}) {
+	var i int
+	for index, value := range lrh.Values {
+		if value.Key == key {
+			i = index
+			break
+		}
+	}
+	heap.Remove(&lrh.Values, i)
+}
+
+// Peek returns the oldest value but does not dequeue it.
+func (lrh *LRUHeap) Peek() *Value {
+	if len(lrh.Values) == 0 {
+		return nil
+	}
+	return lrh.Values[0]
+}
+
+// ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
+// The consumer should return `true` if it should continue processing.
+func (lrh *LRUHeap) ConsumeUntil(consumer func(value *Value) bool) {
+	if len(lrh.Values) == 0 {
+		return
+	}
+
+	len := len(lrh.Values)
+	for i := 0; i < len; i++ {
+		if !consumer(lrh.Peek()) {
+			return
+		}
+		lrh.Pop()
+	}
 }
 
 var (

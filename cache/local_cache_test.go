@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -22,7 +23,8 @@ func TestLocalCache(t *testing.T) {
 
 	c := NewLocalCache()
 
-	c.Set(itemKey{}, "foo")
+	t1 := time.Date(2019, 06, 14, 12, 10, 9, 8, time.UTC)
+	c.Set(itemKey{}, "foo", OptValueTimestamp(t1))
 
 	assert.True(c.Has(itemKey{}))
 	assert.False(c.Has(altItemKey{}))
@@ -31,8 +33,24 @@ func TestLocalCache(t *testing.T) {
 	assert.True(ok)
 	assert.Equal("foo", found)
 
-	c.Set(itemKey{}, "bar")
-	assert.True(c.Has(itemKey{}))
+	c.Set(altItemKey{}, "alt-bar")
+	assert.True(c.Has(altItemKey{}))
+
+	found, ok = c.Get(altItemKey{})
+	assert.True(ok)
+	assert.Equal("alt-bar", found)
+
+	t2 := time.Date(2019, 06, 14, 00, 01, 02, 03, time.UTC)
+	c.Set(itemKey{}, "bar", OptValueTimestamp(t2))
+	assert.Any(c.LRU.Values, func(v interface{}) bool {
+		return v.(*Value).Timestamp == t2
+	}, "we should have updated the LRU values")
+
+	t3 := time.Date(2019, 06, 14, 12, 01, 02, 03, time.UTC)
+	c.Set(altItemKey{}, "alt-bar-2", OptValueTimestamp(t3))
+	assert.Any(c.LRU.Values, func(v interface{}) bool {
+		return v.(*Value).Timestamp == t3
+	}, "we should have updated the LRU values")
 
 	found, ok = c.Get(itemKey{})
 	assert.True(ok)
@@ -42,12 +60,13 @@ func TestLocalCache(t *testing.T) {
 	found, ok = c.Get(itemKey{})
 	assert.False(ok)
 	assert.Nil(found)
+	assert.Len(c.LRU.Values, 1)
 
 	c.Set(itemKey{}, "bar", OptValueTimestamp(time.Now().UTC().Add(-time.Hour)))
 	assert.True(c.Has(itemKey{}))
 
 	stats := c.Stats()
-	assert.Equal(1, stats.Count)
+	assert.Equal(2, stats.Count)
 	assert.NotZero(stats.MaxAge)
 	assert.NotZero(stats.SizeBytes)
 }
@@ -69,7 +88,10 @@ func TestLocalCacheKeyPanic(t *testing.T) {
 	c := NewLocalCache()
 
 	assert.NotNil(try(func() {
-		c.Set("foo", "bar")
+		c.Set(nil, "bar")
+	}))
+	assert.NotNil(try(func() {
+		c.Set([]int{}, "bar")
 	}))
 }
 
@@ -152,4 +174,29 @@ func TestLocalCacheStartSweeping(t *testing.T) {
 	found, ok = c.Get(altItemKey{})
 	assert.True(ok)
 	assert.Equal("bar", found)
+}
+
+func BenchmarkLocalCache(b *testing.B) {
+	for x := 0; x < b.N; x++ {
+		benchLocalCache(1024)
+	}
+}
+
+func benchLocalCache(items int) {
+	lc := NewLocalCache()
+	for x := 0; x < items; x++ {
+		lc.Set(x, strconv.Itoa(x), OptValueTTL(time.Millisecond))
+	}
+	var value interface{}
+	var ok bool
+	for x := 0; x < items; x++ {
+		value, ok = lc.Get(x)
+		if !ok {
+			panic("value not found")
+		}
+		if value.(string) != strconv.Itoa(x) {
+			panic("wrong value")
+		}
+	}
+	lc.Sweep(context.Background())
 }

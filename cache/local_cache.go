@@ -18,7 +18,7 @@ var (
 func NewLocalCache(options ...LocalCacheOption) *LocalCache {
 	c := LocalCache{
 		Data: make(map[interface{}]*Value),
-		LRU:  NewLRUQueue(),
+		LRU:  NewLRUHeap(),
 	}
 	for _, opt := range options {
 		opt(&c)
@@ -40,7 +40,7 @@ func OptLocalCacheSweepInterval(d time.Duration) LocalCacheOption {
 type LocalCache struct {
 	sync.RWMutex
 	Data    map[interface{}]*Value
-	LRU     *LRUQueue
+	LRU     *LRUHeap
 	Sweeper *async.Interval
 }
 
@@ -116,10 +116,6 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 		panic("local cache: key is not comparable")
 	}
 
-	if reflect.TypeOf(key).Kind() != reflect.Struct {
-		panic("local cache: key is not a struct; consider using a key type to leverage the compiler for key checking")
-	}
-
 	v := Value{
 		Timestamp: time.Now().UTC(),
 		Key:       key,
@@ -134,7 +130,13 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 	if lc.Data == nil {
 		lc.Data = make(map[interface{}]*Value)
 	}
-	lc.LRU.Enqueue(&v)
+
+	// add a new lru value
+	if _, ok := lc.Data[key]; !ok {
+		lc.LRU.Push(&v)
+	} else { // "update" an existing value
+		lc.LRU.Fix(key, &v)
+	}
 	lc.Data[key] = &v
 	lc.Unlock()
 }
@@ -165,6 +167,9 @@ func (lc *LocalCache) Has(key interface{}) (has bool) {
 func (lc *LocalCache) Remove(key interface{}) (value interface{}, hit bool) {
 	lc.Lock()
 	valueData, ok := lc.Data[key]
+	if ok {
+		lc.LRU.RemoveByKey(key)
+	}
 	lc.Unlock()
 
 	if !ok {

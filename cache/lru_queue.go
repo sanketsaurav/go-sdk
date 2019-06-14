@@ -134,9 +134,11 @@ func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
 
 	len := lru.Len()
 	for i := 0; i < len; i++ {
-		if !consumer(lru.Dequeue()) {
+		if consumer(lru.Peek()) {
+			lru.Dequeue()
 			return
 		}
+		return
 	}
 }
 
