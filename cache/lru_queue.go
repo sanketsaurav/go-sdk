@@ -8,12 +8,11 @@ const (
 )
 
 // NewLRUQueue creates a new, empty, LRUQueue.
-func NewLRUQueue() *LRUQueue {
+func NewLRUQueue(values ...*Value) *LRUQueue {
 	return &LRUQueue{
-		array: make([]*Value, ringBufferDefaultCapacity),
-		head:  0,
-		tail:  0,
-		size:  0,
+		array: values,
+		tail:  len(values) - 1,
+		size:  len(values),
 	}
 }
 
@@ -46,7 +45,6 @@ func (lru *LRUQueue) Clear() {
 		arrayClear(lru.array, lru.head, len(lru.array)-lru.head)
 		arrayClear(lru.array, 0, lru.tail)
 	}
-
 	lru.head = 0
 	lru.tail = 0
 	lru.size = 0
@@ -99,6 +97,22 @@ func (lru *LRUQueue) PeekBack() *Value {
 	return lru.array[lru.tail-1]
 }
 
+// ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
+func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
+	if lru.size == 0 {
+		return
+	}
+
+	len := lru.Len()
+	for i := 0; i < len; i++ {
+		if consumer(lru.Peek()) {
+			lru.Dequeue()
+			return
+		}
+		return
+	}
+}
+
 func (lru *LRUQueue) setCapacity(capacity int) {
 	newArray := make([]*Value, capacity)
 	if lru.size > 0 {
@@ -123,22 +137,6 @@ func (lru *LRUQueue) trimExcess() {
 	threshold := float64(len(lru.array)) * 0.9
 	if lru.size < int(threshold) {
 		lru.setCapacity(lru.size)
-	}
-}
-
-// ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
-func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
-	if lru.size == 0 {
-		return
-	}
-
-	len := lru.Len()
-	for i := 0; i < len; i++ {
-		if consumer(lru.Peek()) {
-			lru.Dequeue()
-			return
-		}
-		return
 	}
 }
 
