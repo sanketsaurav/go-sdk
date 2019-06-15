@@ -56,7 +56,6 @@ func (lru *LRUQueue) Push(object *Value) {
 		}
 		lru.setCapacity(newCapacity)
 	}
-
 	lru.array[lru.tail] = object
 	lru.tail = (lru.tail + 1) % len(lru.array)
 	lru.size++
@@ -71,7 +70,6 @@ func (lru *LRUQueue) Pop() *Value {
 	removed := lru.array[lru.head]
 	lru.head = (lru.head + 1) % len(lru.array)
 	lru.size--
-
 	return removed
 }
 
@@ -140,10 +138,9 @@ func (lru *LRUQueue) Fix(value *Value) {
 
 	// sort and recreate
 	sort.Sort(LRUHeapValues(values))
-
 	lru.array = values
 	lru.head = 0
-	lru.tail = len(values)
+	lru.tail = len(values) - 1
 	lru.size = len(values)
 }
 
@@ -197,7 +194,7 @@ func (lru *LRUQueue) Remove(key interface{}) {
 	// recreate
 	lru.array = values
 	lru.head = 0
-	lru.tail = len(values)
+	lru.tail = len(values) - 1
 	lru.size = len(values)
 }
 
@@ -207,8 +204,7 @@ func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
 		return
 	}
 
-	len := lru.Len()
-	for i := 0; i < len; i++ {
+	for i := 0; i < lru.size; i++ {
 		if !consumer(lru.Peek()) {
 			return
 		}

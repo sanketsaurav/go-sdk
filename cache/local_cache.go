@@ -20,6 +20,7 @@ func NewLocalCache(options ...LocalCacheOption) *LocalCache {
 		Data: make(map[interface{}]*Value),
 		LRU:  NewLRUQueue(),
 	}
+	c.Sweeper = async.NewInterval(c.Sweep, 500*time.Millisecond)
 	for _, opt := range options {
 		opt(&c)
 	}
@@ -46,33 +47,21 @@ type LocalCache struct {
 
 // Start starts the sweeper.
 func (lc *LocalCache) Start() error {
-	if lc.Sweeper == nil {
-		return nil
-	}
 	return lc.Sweeper.Start()
 }
 
 // NotifyStarted returns the underlying started signal.
 func (lc *LocalCache) NotifyStarted() <-chan struct{} {
-	if lc.Sweeper == nil {
-		return nil
-	}
 	return lc.Sweeper.NotifyStarted()
 }
 
 // Stop stops the sweeper.
 func (lc *LocalCache) Stop() error {
-	if lc.Sweeper == nil {
-		return nil
-	}
 	return lc.Sweeper.Stop()
 }
 
 // NotifyStopped returns the underlying stopped signal.
 func (lc *LocalCache) NotifyStopped() <-chan struct{} {
-	if lc.Sweeper == nil {
-		return nil
-	}
 	return lc.Sweeper.NotifyStopped()
 }
 
@@ -130,11 +119,11 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 	}
 
 	lc.Lock()
+	defer lc.Unlock()
+
 	if lc.Data == nil {
 		lc.Data = make(map[interface{}]*Value)
 	}
-
-	// update the LRU queue
 	if value, ok := lc.Data[key]; ok {
 		*value = v
 		lc.LRU.Fix(&v)
@@ -142,7 +131,6 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 		lc.Data[key] = &v
 		lc.LRU.Push(&v)
 	}
-	lc.Unlock()
 }
 
 // Get gets a value based on a key.
