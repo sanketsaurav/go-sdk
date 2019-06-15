@@ -75,10 +75,10 @@ func (lrh *LRUHeap) Peek() *Value {
 	return lrh.Values[0]
 }
 
-// ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
+// Consume calls the consumer for each element in the buffer, while also dequeueing that entry.
 // The consumer should return `true` if it should remove the item and continue processing.
 // If `false` is returned, the current item will be left in place.
-func (lrh *LRUHeap) ConsumeUntil(consumer func(value *Value) bool) {
+func (lrh *LRUHeap) Consume(consumer func(value *Value) bool) {
 	if len(lrh.Values) == 0 {
 		return
 	}

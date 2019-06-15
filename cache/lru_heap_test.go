@@ -97,7 +97,7 @@ func TestLRUHeapConsumeUntil(t *testing.T) {
 	h.Push(&Value{Key: "1", Expires: t1})
 	assert.Len(h.Values, 6)
 
-	h.ConsumeUntil(func(v *Value) bool {
+	h.Consume(func(v *Value) bool {
 		return v.Expires.Before(t3)
 	})
 	assert.Len(h.Values, 3, "consumeUntil should have removed (3) items")

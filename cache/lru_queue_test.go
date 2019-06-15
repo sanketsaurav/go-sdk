@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -10,7 +12,9 @@ import (
 func tv(index int) *Value {
 	return &Value{
 		Key:       index,
-		Timestamp: time.Date(2019, 06, 14, 12, index, 0, 0, time.UTC),
+		Value:     strconv.Itoa(index),
+		Timestamp: time.Now().UTC(),
+		Expires:   time.Date(2019, 06, 14, 12, index, 0, 0, time.UTC),
 	}
 }
 
@@ -122,21 +126,76 @@ func TestLRUQueueClear(t *testing.T) {
 	assert.Nil(buffer.PeekBack())
 }
 
-func TestLRUQueueConsumeUntil(t *testing.T) {
+func TestLRUQueueFix(t *testing.T) {
+	assert := assert.New(t)
+
+	buffer := NewLRUQueue()
+	for x := 0; x < 8; x++ {
+		buffer.Push(tv(x))
+	}
+
+	tv4e := time.Date(2018, 06, 14, 12, 4, 0, 0, time.UTC)
+	tv4 := tv(4)
+	tv4.Expires = tv4e
+
+	// fix tv4 to have the earliest expires
+	buffer.Fix(tv4)
+
+	// it should now be the head of the queue
+	head := buffer.Peek()
+	assert.Equal(tv4e, head.Expires, fmt.Sprintf("Head is actually %v", head.Key))
+
+	tv6e := time.Date(2017, 06, 14, 12, 4, 0, 0, time.UTC)
+	tv6 := tv(6)
+	tv6.Expires = tv6e
+
+	buffer.Fix(tv6)
+
+	head = buffer.Peek()
+	assert.Equal(tv6e, head.Expires)
+}
+
+func TestLRUQueueRemove(t *testing.T) {
+	assert := assert.New(t)
+
+	buffer := NewLRUQueue()
+	for x := 0; x < 8; x++ {
+		buffer.Push(tv(x))
+	}
+
+	buffer.Remove(4)
+
+	var didFind bool
+	buffer.Each(func(v *Value) bool {
+		if v.Key == 4 {
+			didFind = true
+			return false
+		}
+		return true
+	})
+	assert.False(didFind)
+
+	assert.Equal(tv(0).Expires, buffer.Peek().Expires)
+	assert.Equal(tv(7).Expires, buffer.PeekBack().Expires)
+}
+
+func TestLRUQueueConsume(t *testing.T) {
 	assert := assert.New(t)
 
 	buffer := NewLRUQueue()
 
-	for x := 1; x < 17; x++ {
+	for x := 0; x < 20; x++ {
 		buffer.Push(tv(x))
 	}
 
-	called := 0
-	buffer.ConsumeUntil(func(v *Value) bool {
+	var called int
+	buffer.Consume(func(v *Value) bool {
+		// stop after 10
 		if v.Key.(int) > 10 {
 			return false
 		}
-		if v.Key.(int) == (called + 1) {
+
+		if v.Key.(int) == called {
 			called++
 		}
 		return true

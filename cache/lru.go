@@ -14,7 +14,7 @@ type LRU interface {
 	Fix(*Value)
 	// Remove should remove a value with a given key.
 	Remove(interface{})
-	// ConsumeUntil should iterate through the values. If `true` is removed by the handler,
+	// Consume should iterate through the values. If `true` is removed by the handler,
 	// the current value will be removed and the handler will be called on the next value.
-	ConsumeUntil(func(*Value) bool)
+	Consume(func(*Value) bool)
 }

@@ -75,7 +75,7 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 	var keysToRemove []interface{}
 	var handlers []func(RemovalReason)
 
-	lc.LRU.ConsumeUntil(func(v *Value) bool {
+	lc.LRU.Consume(func(v *Value) bool {
 		if !v.Expires.IsZero() && now.After(v.Expires) {
 			keysToRemove = append(keysToRemove, v.Key)
 			if v.OnRemove != nil {

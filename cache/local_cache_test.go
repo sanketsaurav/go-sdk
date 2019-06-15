@@ -39,6 +39,10 @@ func TestLocalCache(t *testing.T) {
 	assert.True(c.Has(itemKey{}))
 	assert.True(c.Has(altItemKey{}))
 
+	found, ok = c.Get(itemKey{})
+	assert.True(ok)
+	assert.Equal("foo", found)
+
 	found, ok = c.Get(altItemKey{})
 	assert.True(ok)
 	assert.Equal("alt-bar", found)
