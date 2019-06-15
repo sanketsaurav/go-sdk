@@ -50,11 +50,7 @@ func (lru *LRUQueue) Clear() {
 // Push adds an element to the "back" of the LRUQueue.
 func (lru *LRUQueue) Push(object *Value) {
 	if lru.size == len(lru.array) {
-		newCapacity := int(len(lru.array) * int(ringBufferGrowFactor/100))
-		if newCapacity < (len(lru.array) + ringBufferMinimumGrow) {
-			newCapacity = len(lru.array) + ringBufferMinimumGrow
-		}
-		lru.setCapacity(newCapacity)
+		lru.setCapacity(lru.newCapacity())
 	}
 	lru.array[lru.tail] = object
 	lru.tail = (lru.tail + 1) % len(lru.array)
@@ -138,15 +134,23 @@ func (lru *LRUQueue) Fix(value *Value) {
 
 	// sort and recreate
 	sort.Sort(LRUHeapValues(values))
+
 	lru.array = values
 	lru.head = 0
-	lru.tail = len(values) - 1
+	lru.tail = len(values)
 	lru.size = len(values)
 }
 
 // Remove removes an item from the queue by its key.
 func (lru *LRUQueue) Remove(key interface{}) {
 	if lru.size == 0 {
+		return
+	}
+
+	if lru.size == 1 {
+		if lru.array[lru.head].Key == key {
+			lru.Pop()
+		}
 		return
 	}
 
@@ -183,14 +187,6 @@ func (lru *LRUQueue) Remove(key interface{}) {
 		}
 	}
 
-	if len(values) == 0 {
-		lru.array = make([]*Value, ringBufferDefaultCapacity)
-		lru.head = 0
-		lru.tail = 0
-		lru.size = 0
-		return
-	}
-
 	// recreate
 	lru.array = values
 	lru.head = 0
@@ -198,7 +194,8 @@ func (lru *LRUQueue) Remove(key interface{}) {
 	lru.size = len(values)
 }
 
-// ConsumeUntil calls the consumer for each element in the buffer, while also dequeueing that entry.
+// ConsumeUntil calls the consumer for each element in the buffer. If the handler returns true,
+// the element is popped and the handler is called on the next value.
 func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
 	if lru.size == 0 {
 		return
@@ -210,6 +207,18 @@ func (lru *LRUQueue) ConsumeUntil(consumer func(value *Value) bool) {
 		}
 		lru.Pop()
 	}
+}
+
+//
+// util / helpers
+//
+
+func (lru *LRUQueue) newCapacity() int {
+	newCapacity := int(len(lru.array) * int(ringBufferGrowFactor/100))
+	if newCapacity < (len(lru.array) + ringBufferMinimumGrow) {
+		newCapacity = len(lru.array) + ringBufferMinimumGrow
+	}
+	return newCapacity
 }
 
 func (lru *LRUQueue) setCapacity(capacity int) {
@@ -231,13 +240,16 @@ func (lru *LRUQueue) setCapacity(capacity int) {
 	}
 }
 
-// trimExcess resizes the buffer to better fit the contents.
 func (lru *LRUQueue) trimExcess() {
 	threshold := float64(len(lru.array)) * 0.9
 	if lru.size < int(threshold) {
 		lru.setCapacity(lru.size)
 	}
 }
+
+//
+// array helpers
+//
 
 func arrayClear(source []*Value, index, length int) {
 	for x := 0; x < length; x++ {
