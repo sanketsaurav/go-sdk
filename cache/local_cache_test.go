@@ -27,7 +27,7 @@ func TestLocalCache(t *testing.T) {
 	t2 := time.Date(2019, 06, 14, 00, 01, 02, 03, time.UTC)
 	t3 := time.Date(2019, 06, 14, 12, 01, 02, 03, time.UTC)
 
-	c.Set(itemKey{}, "foo", OptValueTimestamp(t1))
+	c.Set(itemKey{}, "foo", OptValueExpires(t1))
 	assert.True(c.Has(itemKey{}))
 	assert.False(c.Has(altItemKey{}))
 
@@ -47,10 +47,10 @@ func TestLocalCache(t *testing.T) {
 	assert.True(ok)
 	assert.Equal("alt-bar", found)
 
-	c.Set(itemKey{}, "foo-2", OptValueTimestamp(t2))
-	assert.Equal(t2, c.Data[itemKey{}].Timestamp)
-	c.Set(altItemKey{}, "alt-bar-2", OptValueTimestamp(t3))
-	assert.Equal(t3, c.Data[altItemKey{}].Timestamp)
+	c.Set(itemKey{}, "foo-2", OptValueExpires(t2))
+	assert.Equal(t2, c.Data[itemKey{}].Expires)
+	c.Set(altItemKey{}, "alt-bar-2", OptValueExpires(t3))
+	assert.Equal(t3, c.Data[altItemKey{}].Expires)
 
 	found, ok = c.Get(itemKey{})
 	assert.True(ok)
@@ -64,7 +64,7 @@ func TestLocalCache(t *testing.T) {
 	assert.False(ok)
 	assert.Nil(found)
 
-	c.Set(itemKey{}, "bar", OptValueTimestamp(time.Now().UTC().Add(-time.Hour)))
+	c.Set(itemKey{}, "bar", OptValueExpires(time.Now().UTC().Add(-time.Hour)))
 	assert.True(c.Has(itemKey{}))
 	assert.True(c.Has(altItemKey{}))
 }
@@ -121,6 +121,27 @@ func TestLocalCacheGetOrSet(t *testing.T) {
 	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
 	assert.False(ok)
 	assert.Equal("foo", found)
+}
+
+func TestLocalCacheGetOrSetDoubleCheckRace(t *testing.T) {
+	assert := assert.New(t)
+
+	didSet := make(chan struct{})
+	valueProvider := func() interface{} {
+		<-didSet
+		return "foo"
+	}
+
+	lc := NewLocalCache()
+
+	go func() {
+		lc.Set("test", "bar2")
+		close(didSet)
+	}()
+
+	found, ok := lc.GetOrSet("test", valueProvider)
+	assert.True(ok)
+	assert.Equal("bar2", found)
 }
 
 func TestLocalCacheSweep(t *testing.T) {
@@ -202,6 +223,25 @@ func TestLocalCacheStartSweeping(t *testing.T) {
 	found, ok = c.Get(altItemKey{})
 	assert.True(ok)
 	assert.Equal("bar", found)
+}
+
+func TestLocalCacheStats(t *testing.T) {
+	assert := assert.New(t)
+
+	t1 := time.Date(2019, 06, 14, 12, 10, 9, 8, time.UTC)
+	t2 := time.Date(2019, 06, 14, 00, 01, 02, 03, time.UTC)
+	t3 := time.Date(2019, 06, 14, 12, 01, 02, 03, time.UTC)
+
+	lc := NewLocalCache()
+
+	lc.Set("foo", "bar", OptValueTimestamp(t1))
+	lc.Set("foo2", "bar2", OptValueTimestamp(t2))
+	lc.Set("foo3", "bar3", OptValueTimestamp(t3))
+
+	stats := lc.Stats()
+	assert.Equal(3, stats.Count)
+	assert.Equal(24, stats.SizeBytes)
+	assert.NotZero(stats.MaxAge)
 }
 
 func BenchmarkLocalCache(b *testing.B) {

@@ -24,11 +24,6 @@ func (lrh *LRUHeap) Len() int {
 	return len(lrh.Values)
 }
 
-// Clear removes all objects from the queue.
-func (lrh *LRUHeap) Clear() {
-	lrh.Values = nil
-}
-
 // Push adds an element to the heap.
 func (lrh *LRUHeap) Push(object *Value) {
 	heap.Push(&lrh.Values, object)
@@ -44,6 +39,10 @@ func (lrh *LRUHeap) Pop() *Value {
 
 // Fix updates a value by key.
 func (lrh *LRUHeap) Fix(newValue *Value) {
+	if len(lrh.Values) == 0 {
+		return
+	}
+
 	var i int
 	for index, value := range lrh.Values {
 		if value.Key == newValue.Key {
@@ -57,6 +56,9 @@ func (lrh *LRUHeap) Fix(newValue *Value) {
 
 // Remove removes a value by key.
 func (lrh *LRUHeap) Remove(key interface{}) {
+	if len(lrh.Values) == 0 {
+		return
+	}
 	var i int
 	for index, value := range lrh.Values {
 		if value.Key == key {

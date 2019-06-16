@@ -23,6 +23,7 @@ func TestLRUHeap(t *testing.T) {
 		Expires: t5,
 	})
 	assert.Len(h.Values, 1)
+	assert.Equal(1, h.Len())
 	h.Push(&Value{
 		Key:     "2",
 		Expires: t2,
@@ -78,6 +79,16 @@ func TestLRUHeap(t *testing.T) {
 	assert.Nil(popped)
 }
 
+func TestLRUHeapEmpty(t *testing.T) {
+	assert := assert.New(t)
+
+	h := NewLRUHeap()
+	h.Fix(nil)
+	h.Remove(nil)
+	assert.Nil(h.Pop())
+	assert.Nil(h.Peek())
+}
+
 func TestLRUHeapConsumeUntil(t *testing.T) {
 	assert := assert.New(t)
 
@@ -101,4 +112,41 @@ func TestLRUHeapConsumeUntil(t *testing.T) {
 		return v.Expires.Before(t3)
 	})
 	assert.Len(h.Values, 3, "consumeUntil should have removed (3) items")
+}
+
+func TestLRUHeapFix(t *testing.T) {
+	assert := assert.New(t)
+
+	t0 := time.Date(2019, 06, 13, 12, 10, 9, 8, time.UTC)
+	t1 := time.Date(2019, 06, 14, 12, 10, 9, 8, time.UTC)
+	t2 := time.Date(2019, 06, 15, 12, 10, 9, 8, time.UTC)
+	t3 := time.Date(2018, 06, 15, 12, 10, 9, 8, time.UTC)
+
+	h := NewLRUHeap()
+	h.Push(&Value{Key: "1", Expires: t0})
+	h.Push(&Value{Key: "2", Expires: t1})
+	h.Push(&Value{Key: "3", Expires: t2})
+	assert.Equal(t0, h.Peek().Expires)
+
+	// do ths fix
+	h.Fix(&Value{Key: "3", Expires: t3})
+
+	assert.Equal(t3, h.Peek().Expires)
+}
+
+func TestLRUHeapRemove(t *testing.T) {
+	assert := assert.New(t)
+
+	t0 := time.Date(2019, 06, 13, 12, 10, 9, 8, time.UTC)
+	t1 := time.Date(2019, 06, 14, 12, 10, 9, 8, time.UTC)
+	t2 := time.Date(2019, 06, 15, 12, 10, 9, 8, time.UTC)
+
+	h := NewLRUHeap()
+	h.Push(&Value{Key: "1", Expires: t0})
+	h.Push(&Value{Key: "2", Expires: t1})
+	h.Push(&Value{Key: "3", Expires: t2})
+	assert.Equal(t0, h.Peek().Expires)
+
+	h.Remove("1")
+	assert.Equal(t1, h.Peek().Expires)
 }

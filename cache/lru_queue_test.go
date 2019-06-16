@@ -110,6 +110,12 @@ func TestLRUQueue(t *testing.T) {
 	assert.Equal(0, buffer.Len())
 	assert.Nil(buffer.Peek())
 	assert.Nil(buffer.PeekBack())
+
+	before := buffer.Capacity()
+	buffer.TrimExcess()
+	after := buffer.Capacity()
+	assert.True(before > after)
+
 }
 
 func TestLRUQueueClear(t *testing.T) {

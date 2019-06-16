@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -43,9 +42,4 @@ type Value struct {
 	Key       interface{}
 	Value     interface{}
 	OnRemove  func(RemovalReason)
-}
-
-// String implements fmt.Stringer.
-func (v Value) String() string {
-	return fmt.Sprintf("%v", v.Key)
 }
