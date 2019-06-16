@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/blend/go-sdk/async"
 )
@@ -250,7 +251,7 @@ func (lc *LocalCache) Stats() (stats Stats) {
 		if stats.MaxAge < age {
 			stats.MaxAge = age
 		}
-		stats.SizeBytes += int(reflect.TypeOf(item).Size())
+		stats.SizeBytes += int(unsafe.Sizeof(item))
 	}
 	return
 }

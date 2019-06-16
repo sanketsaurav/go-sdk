@@ -39,8 +39,12 @@ func main() {
 	lc := cache.NewLocalCache(cache.OptLocalCacheSweepInterval(500 * time.Millisecond))
 	go lc.Start()
 
-	app.GET("/", func(r *web.Ctx) web.Result {
-		data, _ := lc.GetOrSet(dataCacheKey{}, getData, cache.OptValueTTL(time.Second))
+	app.GET("/stats", func(r *web.Ctx) web.Result {
+		return web.JSON.Result(lc.Stats())
+	})
+
+	app.GET("/item/:id", func(r *web.Ctx) web.Result {
+		data, _ := lc.GetOrSet(web.StringValue(r.RouteParam("id")), getData, cache.OptValueTTL(30*time.Second))
 		return web.JSON.Result(data)
 	})
 
