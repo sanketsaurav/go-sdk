@@ -138,12 +138,75 @@ func (lc *LocalCache) Get(key interface{}) (value interface{}, hit bool) {
 	lc.RLock()
 	valueNode, ok := lc.Data[key]
 	lc.RUnlock()
+	if ok {
+		value = valueNode.Value
+		hit = true
+		return
+	}
+	return
+}
+
+// GetOrSet gets a value by a key, and in the case of a miss, sets the value from a given value provider lazily.
+// Hit indicates that the provider was not called.
+func (lc *LocalCache) GetOrSet(key interface{}, valueProvider func() interface{}, options ...ValueOption) (value interface{}, hit bool) {
+	if key == nil {
+		panic("local cache: nil key")
+	}
+
+	if !reflect.TypeOf(key).Comparable() {
+		panic("local cache: key is not comparable")
+	}
+
+	// check if we already have the value
+	lc.RLock()
+	valueNode, ok := lc.Data[key]
+	lc.RUnlock()
 
 	if ok {
 		value = valueNode.Value
 		hit = true
 		return
 	}
+
+	// call the value provider outside the critical section.
+	// this will create a meaningful gap between releasing the
+	// read lock and grabbing the write lock.
+	value = valueProvider()
+
+	// we didn't have the value, grab the write lock
+	lc.Lock()
+	defer lc.Unlock()
+
+	// double checked locks for the children
+	// we do this because there may have been a write while we waited
+	// for the exclusive lock.
+	valueNode, ok = lc.Data[key]
+	if ok {
+		value = valueNode.Value
+		hit = true
+		return
+	}
+
+	// set up the value
+	v := Value{
+		Timestamp: time.Now().UTC(),
+		Key:       key,
+		Value:     value,
+	}
+	// apply options
+	for _, opt := range options {
+		opt(&v)
+	}
+
+	// upsert
+	if value, ok := lc.Data[key]; ok {
+		*value = v
+		lc.LRU.Fix(&v)
+	} else {
+		lc.Data[key] = &v
+		lc.LRU.Push(&v)
+	}
+
 	return
 }
 

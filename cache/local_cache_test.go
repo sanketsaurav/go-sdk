@@ -93,6 +93,36 @@ func TestLocalCacheKeyPanic(t *testing.T) {
 	}))
 }
 
+func TestLocalCacheGetOrSet(t *testing.T) {
+	assert := assert.New(t)
+
+	valueProvider := func() interface{} { return "foo" }
+
+	lc := NewLocalCache()
+	found, ok := lc.GetOrSet(itemKey{}, valueProvider)
+	assert.False(ok)
+	assert.Equal("foo", found)
+	assert.True(lc.Has(itemKey{}))
+	assert.Equal(itemKey{}, lc.LRU.Peek().Key)
+
+	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
+	assert.True(ok)
+	assert.Equal("foo", found)
+
+	lc.Set(itemKey{}, "bar")
+
+	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
+	assert.True(ok)
+	assert.Equal("bar", found)
+
+	lc.Remove(itemKey{})
+	assert.False(lc.Has(itemKey{}))
+
+	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
+	assert.False(ok)
+	assert.Equal("foo", found)
+}
+
 func TestLocalCacheSweep(t *testing.T) {
 	assert := assert.New(t)
 
