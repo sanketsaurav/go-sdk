@@ -156,7 +156,7 @@ func (lc *LocalCache) Get(key interface{}) (value interface{}, hit bool) {
 
 // GetOrSet gets a value by a key, and in the case of a miss, sets the value from a given value provider lazily.
 // Hit indicates that the provider was not called.
-func (lc *LocalCache) GetOrSet(key interface{}, valueProvider func() interface{}, options ...ValueOption) (value interface{}, hit bool) {
+func (lc *LocalCache) GetOrSet(key interface{}, valueProvider func() (interface{}, error), options ...ValueOption) (value interface{}, hit bool, err error) {
 	if key == nil {
 		panic("local cache: nil key")
 	}
@@ -179,7 +179,10 @@ func (lc *LocalCache) GetOrSet(key interface{}, valueProvider func() interface{}
 	// call the value provider outside the critical section.
 	// this will create a meaningful gap between releasing the
 	// read lock and grabbing the write lock.
-	value = valueProvider()
+	value, err = valueProvider()
+	if err != nil {
+		return
+	}
 
 	// we didn't have the value, grab the write lock
 	lc.Lock()

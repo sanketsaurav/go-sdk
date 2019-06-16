@@ -14,13 +14,13 @@ import (
 
 type dataCacheKey struct{}
 
-func getData() interface{} {
+func getData() (interface{}, error) {
 	time.Sleep(500 * time.Millisecond)
 	var output []string
 	for x := 0; x < 1024; x++ {
 		output = append(output, uuid.V4().String())
 	}
-	return output
+	return output, nil
 }
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 	})
 
 	app.GET("/item/:id", func(r *web.Ctx) web.Result {
-		data, _ := lc.GetOrSet(
+		data, _, _ := lc.GetOrSet(
 			web.StringValue(r.RouteParam("id")),
 			getData,
 			cache.OptValueTTL(30*time.Second),

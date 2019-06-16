@@ -96,29 +96,33 @@ func TestLocalCacheKeyPanic(t *testing.T) {
 func TestLocalCacheGetOrSet(t *testing.T) {
 	assert := assert.New(t)
 
-	valueProvider := func() interface{} { return "foo" }
+	valueProvider := func() (interface{}, error) { return "foo", nil }
 
 	lc := NewLocalCache()
-	found, ok := lc.GetOrSet(itemKey{}, valueProvider)
+	found, ok, err := lc.GetOrSet(itemKey{}, valueProvider)
+	assert.Nil(err)
 	assert.False(ok)
 	assert.Equal("foo", found)
 	assert.True(lc.Has(itemKey{}))
 	assert.Equal(itemKey{}, lc.LRU.Peek().Key)
 
-	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
+	found, ok, err = lc.GetOrSet(itemKey{}, valueProvider)
+	assert.Nil(err)
 	assert.True(ok)
 	assert.Equal("foo", found)
 
 	lc.Set(itemKey{}, "bar")
 
-	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
+	found, ok, err = lc.GetOrSet(itemKey{}, valueProvider)
+	assert.Nil(err)
 	assert.True(ok)
 	assert.Equal("bar", found)
 
 	lc.Remove(itemKey{})
 	assert.False(lc.Has(itemKey{}))
 
-	found, ok = lc.GetOrSet(itemKey{}, valueProvider)
+	found, ok, err = lc.GetOrSet(itemKey{}, valueProvider)
+	assert.Nil(err)
 	assert.False(ok)
 	assert.Equal("foo", found)
 }
@@ -127,9 +131,9 @@ func TestLocalCacheGetOrSetDoubleCheckRace(t *testing.T) {
 	assert := assert.New(t)
 
 	didSet := make(chan struct{})
-	valueProvider := func() interface{} {
+	valueProvider := func() (interface{}, error) {
 		<-didSet
-		return "foo"
+		return "foo", nil
 	}
 
 	lc := NewLocalCache()
@@ -139,7 +143,8 @@ func TestLocalCacheGetOrSetDoubleCheckRace(t *testing.T) {
 		close(didSet)
 	}()
 
-	found, ok := lc.GetOrSet("test", valueProvider)
+	found, ok, err := lc.GetOrSet("test", valueProvider)
+	assert.Nil(err)
 	assert.True(ok)
 	assert.Equal("bar2", found)
 }
