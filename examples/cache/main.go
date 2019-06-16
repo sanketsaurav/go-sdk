@@ -14,7 +14,7 @@ import (
 
 type dataCacheKey struct{}
 
-func getData() []string {
+func getData() interface{} {
 	time.Sleep(500 * time.Millisecond)
 	var output []string
 	for x := 0; x < 1024; x++ {
@@ -40,16 +40,7 @@ func main() {
 	go lc.Start()
 
 	app.GET("/", func(r *web.Ctx) web.Result {
-		if data, ok := lc.Get(dataCacheKey{}); ok {
-			return web.JSON.Result(data)
-		}
-		data := getData()
-		lc.Set(dataCacheKey{}, data,
-			cache.OptValueTTL(1*time.Second),
-			cache.OptValueOnRemove(func(_ cache.RemovalReason) {
-				log.Infof("item removed")
-			}),
-		)
+		data, _ := lc.GetOrSet(dataCacheKey{}, getData, cache.OptValueTTL(time.Second))
 		return web.JSON.Result(data)
 	})
 
