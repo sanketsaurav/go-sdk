@@ -153,7 +153,7 @@ func TestLocalCacheSweep(t *testing.T) {
 	c.Set(itemKey{}, "foo",
 		OptValueTimestamp(time.Now().UTC().Add(-2*time.Minute)),
 		OptValueTTL(time.Minute),
-		OptValueOnRemove(func(reason RemovalReason) {
+		OptValueOnRemove(func(_ interface{}, reason RemovalReason) {
 			if reason == Expired {
 				didSweep = true
 			}
@@ -192,7 +192,7 @@ func TestLocalCacheStartSweeping(t *testing.T) {
 	didSweep := make(chan struct{})
 	c.Set(itemKey{}, "a value",
 		OptValueTTL(time.Microsecond),
-		OptValueOnRemove(func(reason RemovalReason) {
+		OptValueOnRemove(func(_ interface{}, reason RemovalReason) {
 			if reason == Expired {
 				close(didSweep)
 			}

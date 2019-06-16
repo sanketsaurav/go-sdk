@@ -44,7 +44,14 @@ func main() {
 	})
 
 	app.GET("/item/:id", func(r *web.Ctx) web.Result {
-		data, _ := lc.GetOrSet(web.StringValue(r.RouteParam("id")), getData, cache.OptValueTTL(30*time.Second))
+		data, _ := lc.GetOrSet(
+			web.StringValue(r.RouteParam("id")),
+			getData,
+			cache.OptValueTTL(30*time.Second),
+			cache.OptValueOnRemove(func(key interface{}, reason cache.RemovalReason) {
+				log.Infof("cache item removed: %s %v", key, reason)
+			}),
+		)
 		return web.JSON.Result(data)
 	})
 

@@ -29,7 +29,7 @@ func OptValueTimestamp(t time.Time) ValueOption {
 }
 
 // OptValueOnRemove sets the on remove handler.
-func OptValueOnRemove(handler func(RemovalReason)) ValueOption {
+func OptValueOnRemove(handler func(interface{}, RemovalReason)) ValueOption {
 	return func(v *Value) {
 		v.OnRemove = handler
 	}
@@ -41,5 +41,5 @@ type Value struct {
 	Expires   time.Time
 	Key       interface{}
 	Value     interface{}
-	OnRemove  func(RemovalReason)
+	OnRemove  func(interface{}, RemovalReason)
 }

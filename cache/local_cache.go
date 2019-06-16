@@ -66,6 +66,11 @@ func (lc *LocalCache) NotifyStopped() <-chan struct{} {
 	return lc.Sweeper.NotifyStopped()
 }
 
+type removeHandler struct {
+	Key     interface{}
+	Handler func(interface{}, RemovalReason)
+}
+
 // Sweep checks keys for expired ttls.
 // If any values are configured with 'OnSweep' handlers, they will be called
 // outside holding the critical section.
@@ -74,13 +79,15 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 	now := time.Now().UTC()
 
 	var keysToRemove []interface{}
-	var handlers []func(RemovalReason)
-
+	var handlers []removeHandler
 	lc.LRU.Consume(func(v *Value) bool {
 		if !v.Expires.IsZero() && now.After(v.Expires) {
 			keysToRemove = append(keysToRemove, v.Key)
 			if v.OnRemove != nil {
-				handlers = append(handlers, v.OnRemove)
+				handlers = append(handlers, removeHandler{
+					Key:     v.Key,
+					Handler: v.OnRemove,
+				})
 			}
 			return true
 		}
@@ -94,7 +101,7 @@ func (lc *LocalCache) Sweep(ctx context.Context) error {
 
 	// call the handlers outside the critical section.
 	for _, handler := range handlers {
-		handler(Expired)
+		handler.Handler(handler.Key, Expired)
 	}
 	return nil
 }
@@ -233,7 +240,7 @@ func (lc *LocalCache) Remove(key interface{}) (value interface{}, hit bool) {
 	value = valueData.Value
 	hit = true
 	if valueData.OnRemove != nil {
-		valueData.OnRemove(Removed)
+		valueData.OnRemove(key, Removed)
 	}
 	delete(lc.Data, key)
 	return
