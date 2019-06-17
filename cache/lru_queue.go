@@ -99,9 +99,7 @@ func (lru *LRUQueue) Fix(value *Value) {
 		panic("lru queue; value is nil")
 	}
 
-	capacity := len(lru.array)
-	size := lru.size
-	values := make([]*Value, size)
+	values := make([]*Value, lru.size)
 	var index int
 	var didUpdate bool
 	lru.Each(func(v *Value) bool {
@@ -117,12 +115,10 @@ func (lru *LRUQueue) Fix(value *Value) {
 	if didUpdate {
 		sort.Sort(LRUHeapValues(values))
 	}
-
-	lru.array = make([]*Value, capacity)
+	lru.array = make([]*Value, len(lru.array))
 	copy(lru.array, values)
 	lru.head = 0
-	lru.tail = size
-	lru.size = size
+	lru.tail = lru.size
 }
 
 // Remove removes an item from the queue by its key.
@@ -145,7 +141,6 @@ func (lru *LRUQueue) Remove(key interface{}) {
 			cursor++
 		}
 	}
-
 	for x := 0; x < len(values); x++ {
 		lru.Push(values[x])
 	}
