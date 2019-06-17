@@ -99,20 +99,30 @@ func (lru *LRUQueue) Fix(value *Value) {
 		panic("lru queue; value is nil")
 	}
 
+	capacity := len(lru.array)
 	size := lru.size
 	values := make([]*Value, size)
-	for x := 0; x < size; x++ { // lru.size changes as you call .Pop()
-		head := lru.Pop()
-		if head.Key != value.Key {
-			values[x] = head
+	var index int
+	var didUpdate bool
+	lru.Each(func(v *Value) bool {
+		if v.Key == value.Key {
+			didUpdate = v.Expires != value.Expires
+			values[index] = value
 		} else {
-			values[x] = value
+			values[index] = v
 		}
+		index++
+		return true
+	})
+	if didUpdate {
+		sort.Sort(LRUHeapValues(values))
 	}
-	sort.Sort(LRUHeapValues(values))
-	for x := 0; x < len(values); x++ {
-		lru.Push(values[x])
-	}
+
+	lru.array = make([]*Value, capacity)
+	copy(lru.array, values)
+	lru.head = 0
+	lru.tail = size
+	lru.size = size
 }
 
 // Remove removes an item from the queue by its key.

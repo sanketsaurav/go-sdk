@@ -277,6 +277,9 @@ func benchLocalCache(items int) {
 	for x := 0; x < items; x++ {
 		lc.Set(x, strconv.Itoa(x), OptValueTTL(time.Millisecond))
 	}
+	for x := 0; x < items; x++ {
+		lc.Set(x, strconv.Itoa(x), OptValueTTL(time.Second))
+	}
 	var value interface{}
 	var ok bool
 	for x := 0; x < items; x++ {
