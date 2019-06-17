@@ -233,18 +233,19 @@ func (lc *LocalCache) Remove(key interface{}) (value interface{}, hit bool) {
 	lc.Lock()
 	valueData, ok := lc.Data[key]
 	if ok {
+		delete(lc.Data, key)
 		lc.LRU.Remove(key)
 	}
 	lc.Unlock()
 	if !ok {
 		return
 	}
+
 	value = valueData.Value
 	hit = true
 	if valueData.OnRemove != nil {
 		valueData.OnRemove(key, Removed)
 	}
-	delete(lc.Data, key)
 	return
 }
 
