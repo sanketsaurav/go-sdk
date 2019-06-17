@@ -127,8 +127,6 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 	}
 
 	lc.Lock()
-	defer lc.Unlock()
-
 	if lc.Data == nil {
 		lc.Data = make(map[interface{}]*Value)
 	}
@@ -139,6 +137,7 @@ func (lc *LocalCache) Set(key, value interface{}, options ...ValueOption) {
 		lc.Data[key] = &v
 		lc.LRU.Push(&v)
 	}
+	lc.Unlock()
 }
 
 // Get gets a value based on a key.
