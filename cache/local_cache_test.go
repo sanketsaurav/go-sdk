@@ -127,6 +127,23 @@ func TestLocalCacheGetOrSet(t *testing.T) {
 	assert.Equal("foo", found)
 }
 
+func TestLocalCacheGetOrSetError(t *testing.T) {
+	assert := assert.New(t)
+
+	valueProvider := func() (interface{}, error) {
+		return nil, fmt.Errorf("test")
+	}
+
+	lc := NewLocalCache()
+
+	found, ok, err := lc.GetOrSet("test", valueProvider)
+	assert.NotNil(err)
+	assert.False(ok)
+	assert.Nil(found)
+
+	assert.False(lc.Has("test"))
+}
+
 func TestLocalCacheGetOrSetDoubleCheckRace(t *testing.T) {
 	assert := assert.New(t)
 
