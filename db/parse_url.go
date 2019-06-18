@@ -64,6 +64,8 @@ func ParseURL(databaseURL string) (string, error) {
 
 	if u.Path != "" {
 		accrue("dbname", u.Path[1:])
+	} else {
+		accrue("dbname", DefaultDatabase)
 	}
 
 	q := u.Query()
