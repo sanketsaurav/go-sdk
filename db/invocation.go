@@ -75,7 +75,7 @@ func (i *Invocation) Query(statement string, args ...interface{}) *Query {
 		CachedPlanKey: i.CachedPlanKey,
 		Args:          args,
 		Conn:          i.Conn,
-		Inv:           i,
+		Invocation:    i,
 		Tx:            i.Tx,
 		Err:           err,
 	}

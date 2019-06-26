@@ -22,9 +22,9 @@ type Query struct {
 	Rows *sql.Rows
 	Err  error
 
-	Conn *Connection
-	Inv  *Invocation
-	Tx   *sql.Tx
+	Conn       *Connection
+	Invocation *Invocation
+	Tx         *sql.Tx
 }
 
 // Execute runs a given query, yielding the raw results.
@@ -234,12 +234,12 @@ func (q *Query) query() (rows *sql.Rows, err error) {
 		return
 	}
 
-	stmt, stmtErr := q.Inv.Prepare(q.Statement)
+	stmt, stmtErr := q.Invocation.Prepare(q.Statement)
 	if stmtErr != nil {
 		err = Error(stmtErr)
 		return
 	}
-	defer func() { err = q.Inv.CloseStatement(stmt, err) }()
+	defer func() { err = q.Invocation.CloseStatement(stmt, err) }()
 
 	rows, err = stmt.QueryContext(q.Context, q.Args...)
 	if err != nil && !ex.Is(err, sql.ErrNoRows) {
@@ -249,5 +249,5 @@ func (q *Query) query() (rows *sql.Rows, err error) {
 }
 
 func (q *Query) finish(r interface{}, err error) error {
-	return q.Inv.Finish(q.Statement, r, err)
+	return q.Invocation.Finish(q.Statement, r, err)
 }
