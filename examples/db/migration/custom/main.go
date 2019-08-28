@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -13,7 +12,7 @@ import (
 
 // UserNotExists creates a index on the given connection if it does not exist.
 func UserNotExists(username string) migration.GuardFunc {
-	return migration.Guard(fmt.Sprintf("create user `%s`", username), func(c *db.Connection, tx *sql.Tx) (bool, error) {
+	return migration.Guard(fmt.Sprintf("create user `%s`", username), func(c *db.Connection, tx *db.Tx) (bool, error) {
 		return c.Invoke(db.OptTx(tx)).Query(`SELECT 1 FROM users WHERE username = $1`, strings.ToLower(username)).None()
 	})
 }

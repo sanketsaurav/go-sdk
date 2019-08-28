@@ -18,7 +18,7 @@ func TestStatementCachePrepare(t *testing.T) {
 	assert.NotNil(stmt)
 	assert.True(sc.HasStatement(query))
 
-	// shoul result in cache hit
+	// should result in cache hit
 	stmt, err = sc.PrepareContext(context.Background(), query, query)
 	assert.NotNil(stmt)
 	assert.True(sc.HasStatement(query))

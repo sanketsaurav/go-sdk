@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 	"sync"
 	"testing"
@@ -33,11 +32,11 @@ func secondArgErr(_ interface{}, err error) error {
 	return err
 }
 
-func createJSONTestTable(tx *sql.Tx) error {
+func createJSONTestTable(tx *Tx) error {
 	return IgnoreExecResult(defaultDB().Invoke(OptTx(tx)).Exec("create table json_test (id serial primary key, name varchar(255), not_null json, nullable json)"))
 }
 
-func dropJSONTextTable(tx *sql.Tx) error {
+func dropJSONTextTable(tx *Tx) error {
 	return IgnoreExecResult(defaultDB().Invoke(OptTx(tx)).Exec("drop table if exists json_test"))
 }
 
@@ -484,7 +483,7 @@ func TestConnectionGetMiss(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{
@@ -506,7 +505,7 @@ func TestConnectionDelete(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{
@@ -533,7 +532,7 @@ func TestConnectionDeleteMiss(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{
@@ -552,7 +551,7 @@ func TestConnectionUpdate(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{
@@ -585,7 +584,7 @@ func TestConnectionUpdateMiss(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{
@@ -604,7 +603,7 @@ func TestConnectionUpsert(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{
@@ -703,7 +702,7 @@ func TestConnectionCreateIfNotExists(t *testing.T) {
 	assert.Nil(err)
 	defer tx.Rollback()
 
-	err = createUpserObjectTable(tx)
+	err = createUpsertObjectTable(tx)
 	assert.Nil(err)
 
 	obj := &upsertObj{

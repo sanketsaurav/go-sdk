@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/blend/go-sdk/db"
@@ -15,7 +14,7 @@ func main() {
 		migration.NewGroup(migration.OptActions(
 			migration.NewStep(
 				migration.Always(),
-				func(ctx context.Context, connection *db.Connection, tx *sql.Tx) error {
+				func(ctx context.Context, connection *db.Connection, tx *db.Tx) error {
 					return db.IgnoreExecResult(connection.Invoke(db.OptTimeout(500 * time.Millisecond)).Exec("select pg_sleep(10);"))
 				},
 			),

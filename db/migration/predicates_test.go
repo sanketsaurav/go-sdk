@@ -2,7 +2,6 @@ package migration
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -25,36 +24,36 @@ func randomName() string {
 	return string(runes)
 }
 
-func createTestTable(tableName string, tx *sql.Tx) error {
+func createTestTable(tableName string, tx *db.Tx) error {
 	body := fmt.Sprintf("CREATE TABLE %s (id int, name varchar(32));", tableName)
 	step := NewStep(TableNotExists(tableName), Statements(body))
 	return step.Action(context.Background(), defaultDB(), tx)
 }
 
-func insertTestValue(tableName string, id int, name string, tx *sql.Tx) error {
+func insertTestValue(tableName string, id int, name string, tx *db.Tx) error {
 	body := fmt.Sprintf("INSERT INTO %s (id, name) VALUES ($1, $2);", tableName)
 	return db.IgnoreExecResult(defaultDB().Invoke(db.OptTx(tx)).Exec(body, id, name))
 }
 
-func createTestColumn(tableName, columnName string, tx *sql.Tx) error {
+func createTestColumn(tableName, columnName string, tx *db.Tx) error {
 	body := fmt.Sprintf("ALTER TABLE %s ADD %s varchar(32);", tableName, columnName)
 	step := NewStep(ColumnNotExists(tableName, columnName), Statements(body))
 	return step.Action(context.Background(), defaultDB(), tx)
 }
 
-func createTestConstraint(tableName, constraintName string, tx *sql.Tx) error {
+func createTestConstraint(tableName, constraintName string, tx *db.Tx) error {
 	body := fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s UNIQUE (name);", tableName, constraintName)
 	step := NewStep(ColumnNotExists(tableName, constraintName), Statements(body))
 	return step.Action(context.Background(), defaultDB(), tx)
 }
 
-func createTestIndex(tableName, indexName string, tx *sql.Tx) error {
+func createTestIndex(tableName, indexName string, tx *db.Tx) error {
 	body := fmt.Sprintf("CREATE INDEX %s ON %s (name);", indexName, tableName)
 	step := NewStep(IndexNotExists(tableName, indexName), Statements(body))
 	return step.Action(context.Background(), defaultDB(), tx)
 }
 
-func createTestRole(roleName string, tx *sql.Tx) error {
+func createTestRole(roleName string, tx *db.Tx) error {
 	body := fmt.Sprintf("CREATE ROLE %s;", roleName)
 	step := NewStep(RoleNotExists(roleName), Statements(body))
 	return step.Action(context.Background(), defaultDB(), tx)

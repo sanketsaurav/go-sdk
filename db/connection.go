@@ -127,25 +127,32 @@ func (dbc *Connection) Open() error {
 }
 
 // Begin starts a new transaction.
-func (dbc *Connection) Begin(opts ...*sql.TxOptions) (*sql.Tx, error) {
+func (dbc *Connection) Begin(opts ...*sql.TxOptions) (*Tx, error) {
 	return dbc.BeginContext(context.Background(), opts...)
 }
 
 // BeginContext starts a new transaction in a givent context.
-func (dbc *Connection) BeginContext(context context.Context, opts ...*sql.TxOptions) (*sql.Tx, error) {
+func (dbc *Connection) BeginContext(context context.Context, opts ...*sql.TxOptions) (*Tx, error) {
 	if dbc.Connection == nil {
 		return nil, ex.New(ErrConnectionClosed)
 	}
 	if len(opts) > 0 {
-		tx, err := dbc.Connection.BeginTx(context, opts[0])
-		return tx, Error(err)
+		sqlTx, err := dbc.Connection.BeginTx(context, opts[0])
+		tx := Tx {
+			Tx: sqlTx,
+		}
+
+		return &tx, Error(err)
 	}
-	tx, err := dbc.Connection.BeginTx(context, nil)
-	return tx, Error(err)
+	sqlTx, err := dbc.Connection.BeginTx(context, nil)
+	tx := Tx {
+		Tx: sqlTx,
+	}
+	return &tx, Error(err)
 }
 
 // PrepareContext prepares a statement potentially returning a cached version of the statement.
-func (dbc *Connection) PrepareContext(context context.Context, cachedPlanKey, statement string, tx *sql.Tx) (stmt *sql.Stmt, err error) {
+func (dbc *Connection) PrepareContext(context context.Context, cachedPlanKey, statement string, tx *Tx) (stmt *sql.Stmt, err error) {
 	if dbc.Tracer != nil {
 		tf := dbc.Tracer.Prepare(context, dbc, statement)
 		if tf != nil {

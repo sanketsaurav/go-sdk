@@ -2,7 +2,6 @@ package migration
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -24,12 +23,12 @@ func TestGuard(t *testing.T) {
 	assert.Nil(err)
 
 	var didRun bool
-	action := Actions(func(ctx context.Context, c *db.Connection, itx *sql.Tx) error {
+	action := Actions(func(ctx context.Context, c *db.Connection, itx *db.Tx) error {
 		didRun = true
 		return nil
 	})
 
-	err = Guard("test", func(c *db.Connection, itx *sql.Tx) (bool, error) {
+	err = Guard("test", func(c *db.Connection, itx *db.Tx) (bool, error) {
 		return c.Invoke(db.OptTx(itx)).Query(fmt.Sprintf("select * from %s", tableName)).Any()
 	})(
 		context.Background(),

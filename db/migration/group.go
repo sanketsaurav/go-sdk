@@ -2,7 +2,6 @@ package migration
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/blend/go-sdk/db"
 	"github.com/blend/go-sdk/ex"
@@ -38,7 +37,7 @@ type Group struct {
 
 // Action runs the groups actions within a transaction.
 func (ga *Group) Action(ctx context.Context, c *db.Connection) (err error) {
-	var tx *sql.Tx
+	var tx *db.Tx
 	if !ga.SkipTransaction {
 		tx, err = c.Begin()
 		if err != nil {

@@ -3,7 +3,6 @@ package migration
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"testing"
@@ -195,14 +194,14 @@ func createDataFileMigrations(testSchemaName string) []*Group {
 				SchemaNotExists(testSchemaName),
 				Actions(
 					// pq can't parameterize Create
-					func(i context.Context, connection *db.Connection, tx *sql.Tx) error {
+					func(i context.Context, connection *db.Connection, tx *db.Tx) error {
 						err := db.IgnoreExecResult(connection.Exec(fmt.Sprintf("CREATE SCHEMA %s;", testSchemaName)))
 						if err != nil {
 							return err
 						}
 						return nil
 					},
-					func(i context.Context, connection *db.Connection, tx *sql.Tx) error {
+					func(i context.Context, connection *db.Connection, tx *db.Tx) error {
 						// This is a hack to set the schema on the connection
 						(&connection.Config).Schema = testSchemaName
 						return nil

@@ -21,7 +21,7 @@ type Invocation struct {
 	Tracer               Tracer
 	TraceFinisher        TraceFinisher
 	StartTime            time.Time
-	Tx                   *sql.Tx
+	Tx                   *Tx
 	Err                  error
 }
 

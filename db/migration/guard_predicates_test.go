@@ -2,7 +2,6 @@ package migration
 
 import (
 	"context"
-	"database/sql"
 	"testing"
 
 	"github.com/blend/go-sdk/assert"
@@ -21,7 +20,7 @@ func TestGuardPredicatesReal(t *testing.T) {
 	iName := "index_foo"
 
 	var didRun bool
-	action := Actions(func(ctx context.Context, c *db.Connection, itx *sql.Tx) error {
+	action := Actions(func(ctx context.Context, c *db.Connection, itx *db.Tx) error {
 		didRun = true
 		return nil
 	})
@@ -119,7 +118,7 @@ func TestGuardPredicatsRealSchema(t *testing.T) {
 	assert.Nil(err)
 
 	var didRun bool
-	action := Actions(func(ctx context.Context, c *db.Connection, itx *sql.Tx) error {
+	action := Actions(func(ctx context.Context, c *db.Connection, itx *db.Tx) error {
 		didRun = true
 		return nil
 	})

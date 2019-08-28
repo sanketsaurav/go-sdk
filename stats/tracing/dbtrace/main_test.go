@@ -1,7 +1,6 @@
 package dbtrace
 
 import (
-	"database/sql"
 	"os"
 	"testing"
 
@@ -45,7 +44,7 @@ func openDefaultDB(conn *db.Connection) error {
 	return nil
 }
 
-func createTable(tx *sql.Tx) error {
+func createTable(tx *db.Tx) error {
 	createSQL := `CREATE TABLE IF NOT EXISTS test_table (
 		id serial not null primary key
 	);`

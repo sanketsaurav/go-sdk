@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"testing"
@@ -111,7 +110,7 @@ func (uo upsertObj) TableName() string {
 	return "upsert_object"
 }
 
-func createUpserObjectTable(tx *sql.Tx) error {
+func createUpsertObjectTable(tx *Tx) error {
 	createSQL := `CREATE TABLE IF NOT EXISTS upsert_object (uuid varchar(255) primary key, timestamp_utc timestamp, category varchar(255));`
 	return IgnoreExecResult(defaultDB().Invoke(OptTx(tx)).Exec(createSQL))
 }
@@ -138,7 +137,7 @@ func (b benchObj) TableName() string {
 	return "bench_object"
 }
 
-func createTable(tx *sql.Tx) error {
+func createTable(tx *Tx) error {
 	createSQL := `CREATE TABLE IF NOT EXISTS bench_object (
 		id serial not null primary key
 		, uuid uuid not null
@@ -151,7 +150,7 @@ func createTable(tx *sql.Tx) error {
 	return IgnoreExecResult(defaultDB().Invoke(OptTx(tx)).Exec(createSQL))
 }
 
-func dropTableIfExists(tx *sql.Tx) error {
+func dropTableIfExists(tx *Tx) error {
 	dropSQL := `DROP TABLE IF EXISTS bench_object;`
 	return IgnoreExecResult(defaultDB().Invoke(OptTx(tx)).Exec(dropSQL))
 }
@@ -161,7 +160,7 @@ func ensureUUIDExtension() error {
 	return IgnoreExecResult(defaultDB().Exec(uuidCreate))
 }
 
-func createObject(index int, tx *sql.Tx) error {
+func createObject(index int, tx *Tx) error {
 	obj := benchObj{
 		Name:      fmt.Sprintf("test_object_%d", index),
 		UUID:      uuid.V4().String(),
@@ -173,7 +172,7 @@ func createObject(index int, tx *sql.Tx) error {
 	return defaultDB().Invoke(OptTx(tx)).Create(&obj)
 }
 
-func seedObjects(count int, tx *sql.Tx) error {
+func seedObjects(count int, tx *Tx) error {
 	if err := ensureUUIDExtension(); err != nil {
 		return err
 	}
@@ -193,7 +192,7 @@ func seedObjects(count int, tx *sql.Tx) error {
 	return nil
 }
 
-func readManual(tx *sql.Tx) ([]benchObj, error) {
+func readManual(tx *Tx) ([]benchObj, error) {
 	var objs []benchObj
 	readSQL := `select id,uuid,name,timestamp_utc,amount,pending,category from bench_object`
 	readStmt, err := defaultDB().PrepareContext(context.Background(), "", readSQL, tx)
@@ -220,13 +219,13 @@ func readManual(tx *sql.Tx) ([]benchObj, error) {
 	return objs, nil
 }
 
-func readOrm(tx *sql.Tx) ([]benchObj, error) {
+func readOrm(tx *Tx) ([]benchObj, error) {
 	var objs []benchObj
 	allErr := defaultDB().Invoke(OptTx(tx)).Query(fmt.Sprintf("select %s from bench_object", ColumnNamesCSV(benchObj{}))).OutMany(&objs)
 	return objs, allErr
 }
 
-func readCachedOrm(tx *sql.Tx) ([]benchObj, error) {
+func readCachedOrm(tx *Tx) ([]benchObj, error) {
 	var objs []benchObj
 	allErr := defaultDB().Invoke(OptTx(tx), OptCachedPlanKey("get_all_bench_object")).Query(fmt.Sprintf("select %s from bench_object", ColumnNamesCSV(benchObj{}))).OutMany(&objs)
 	return objs, allErr

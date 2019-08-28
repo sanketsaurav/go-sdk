@@ -2,7 +2,6 @@ package migration
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -69,7 +68,7 @@ func createTestMigrations(testSchemaName string) []*Group {
 				SchemaNotExists(testSchemaName),
 				Actions(
 					// pq can't parameterize Create
-					func(i context.Context, connection *db.Connection, tx *sql.Tx) error {
+					func(i context.Context, connection *db.Connection, tx *db.Tx) error {
 						err := db.IgnoreExecResult(connection.Exec(fmt.Sprintf("CREATE SCHEMA %s;", testSchemaName)))
 						if err != nil {
 							return err
@@ -78,7 +77,7 @@ func createTestMigrations(testSchemaName string) []*Group {
 					},
 					// Test NoOp
 					NoOp,
-					func(i context.Context, connection *db.Connection, tx *sql.Tx) error {
+					func(i context.Context, connection *db.Connection, tx *db.Tx) error {
 						// This is a hack to set the schema on the connection
 						(&connection.Config).Schema = testSchemaName
 						return nil

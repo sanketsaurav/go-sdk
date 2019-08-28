@@ -24,7 +24,7 @@ type Query struct {
 
 	Conn       *Connection
 	Invocation *Invocation
-	Tx         *sql.Tx
+	Tx         *Tx
 }
 
 // NextResultSet advances to the next result if there is one.

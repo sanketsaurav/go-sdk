@@ -44,7 +44,7 @@ func (dfr *DataFileReader) Label() string {
 }
 
 // Action applies the file reader.
-func (dfr *DataFileReader) Action(ctx context.Context, c *db.Connection, tx *sql.Tx) (err error) {
+func (dfr *DataFileReader) Action(ctx context.Context, c *db.Connection, tx *db.Tx) (err error) {
 	var f *os.File
 	if f, err = os.Open(dfr.path); err != nil {
 		return
@@ -127,7 +127,7 @@ func (dfr *DataFileReader) Action(ctx context.Context, c *db.Connection, tx *sql
 	return nil
 }
 
-func (dfr *DataFileReader) executeCopyLine(line string, c *db.Connection, tx *sql.Tx) (*sql.Stmt, error) {
+func (dfr *DataFileReader) executeCopyLine(line string, c *db.Connection, tx *db.Tx) (*sql.Stmt, error) {
 	pieces := dfr.extractCopyLine(line)
 	if len(pieces) < 3 {
 		return nil, ex.New("Invalid `COPY ...` line, cannot continue.")
