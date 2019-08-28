@@ -27,7 +27,7 @@ type Query struct {
 	Tx         *Tx
 }
 
-// NextResultSet advances to the next result if there is one.
+// NextResultSet advances to the nested result if there is one.
 func (q *Query) NextResultSet() bool {
 	return q.Rows.NextResultSet()
 }
