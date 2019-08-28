@@ -31,7 +31,7 @@ func (tx *Tx) Begin() (*Tx, error) {
 		savePoint: tx.savePoint + 1,
 	}
 
-	_, err := tx.Exec(fmt.Sprintf("SAVEPOINT SP%s", strconv.Itoa(tx.next.savePoint)))
+	_, err := tx.Exec(fmt.Sprintf("SAVEPOINT PT%s", strconv.Itoa(tx.next.savePoint)))
 
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (tx *Tx) Rollback() error {
 	tx.resolved = true
 
 	if tx.savePoint > 0 {
-		_, err := tx.Exec("ROLLBACK TO SAVEPOINT SP" + strconv.Itoa(tx.savePoint))
+		_, err := tx.Exec(fmt.Sprintf("ROLLBACK TO SAVEPOINT PT%s", strconv.Itoa(tx.savePoint)))
 		return err
 	}
 
@@ -64,7 +64,7 @@ func (tx *Tx) Commit() error {
 	tx.resolved = true
 
 	if tx.savePoint > 0 {
-		_, err := tx.Exec("RELEASE SAVEPOINT SP" + strconv.Itoa(tx.savePoint))
+		_, err := tx.Exec(fmt.Sprintf("RELEASE SAVEPOINT PT%s", strconv.Itoa(tx.savePoint)))
 
 		return err
 	}
