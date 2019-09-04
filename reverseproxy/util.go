@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"golang.org/x/net/http/httpguts"
+	"github.com/blend/go-sdk/webutil"
 )
 
 // MustParseURL parses a url and panics if it's bad.
@@ -28,9 +28,9 @@ func RequestCopy(req *http.Request) *http.Request {
 }
 
 // UpgradeType returns the connection upgrade type.
-// This is used by websockt support.
+// This is used by websocket support.
 func UpgradeType(h http.Header) string {
-	if !httpguts.HeaderValuesContainsToken(h["Connection"], "Upgrade") {
+	if !webutil.HeaderValuesContainsToken(h["Connection"], "Upgrade") {
 		return ""
 	}
 	return strings.ToLower(h.Get("Upgrade"))

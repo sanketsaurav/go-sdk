@@ -23,10 +23,6 @@ func TestRequestNew(t *testing.T) {
 	assert.Equal(MethodGet, r.Method)
 	assert.NotNil(r.URL)
 	assert.Equal("https://foo.com/bar?buzz=fuzz", r.URL.String())
-
-	rErr := New("\n")
-	assert.NotNil(rErr)
-	assert.NotNil(rErr.Err)
 }
 
 func TestRequestDo(t *testing.T) {

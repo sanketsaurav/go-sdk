@@ -4,9 +4,10 @@ PKGS 			:= $(shell go list ./... | grep -v /vendor/)
 LINTPKGS        := $(shell go list ./... | grep -v /vendor/ | grep -v "go-sdk/yaml")
 SHASUMCMD 		:= $(shell command -v sha1sum || command -v shasum; 2> /dev/null)
 TARCMD 			:= $(shell command -v tar || command -v tar; 2> /dev/null)
-GIT_REF 		:= $(shell git log --pretty=format:'%h' -n 1)
+GIT_REF 		:= $(shell git rev-parse HEAD)
 CURRENT_USER 	:= $(shell whoami)
 VERSION 		:= $(shell cat ./VERSION)
+BUILD_NUMBER	?= $(shell git rev-parse HEAD:)
 
 # this is to allow local go-sdk/db tests to pass
 DB_PORT 		?= 5432
@@ -19,6 +20,7 @@ COVERAGE_OUT 		:= "$(CIRCLE_ARTIFACTS)/coverage.html"
 export GIT_REF
 export VERSION
 export DB_SSLMODE
+export BUILD_NUMBER
 
 all: ci
 
@@ -83,6 +85,10 @@ profanity:
 test-circleci:
 	@echo "$(VERSION)/$(GIT_REF) >> tests"
 	@circleci build
+
+test-docker:
+	@echo "$(VERSION)/$(GIT_REF) >> tests (docker)"
+	@bash ./_bin/run_tests docker-compose.yml
 
 test:
 	@echo "$(VERSION)/$(GIT_REF) >> tests"

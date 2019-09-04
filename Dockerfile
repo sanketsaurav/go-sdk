@@ -1,15 +1,16 @@
-FROM golang:1.11-alpine
+FROM golang:1-alpine
+
+RUN apk update && \
+    apk upgrade && \
+    apk add git make
 
 ENV CGO_ENABLED=0
+ENV GO111MODULE=off
 
 WORKDIR /go/src/github.com/blend/go-sdk
 
-RUN apk update && \
-	apk upgrade && \
-	apk add git
-
-ADD . /go/src/github.com/blend/go-sdk
+ADD . .
 
 RUN go get ./...
 
-ENTRYPOINT go test ./...
+CMD [ "make", "ci" ]
