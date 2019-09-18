@@ -2,6 +2,7 @@ package selector
 
 import (
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -20,14 +21,24 @@ const (
 
 // Parser parses a selector incrementally.
 type Parser struct {
+	ValidationRules ValidationRules
+	SkipValidation  bool
+
 	// s stores the string to be tokenized
 	s string
 	// pos is the position currently tokenized
 	pos int
 	// m is an optional mark
 	m int
+}
 
-	skipValidation bool
+// ValidationRulesOrDefault returns the validation rules
+// or the default rules if they are unset.
+func (p *Parser) ValidationRulesOrDefault() ValidationRules {
+	if p.ValidationRules != nil {
+		return p.ValidationRules
+	}
+	return DefaultValidationRules
 }
 
 // Parse does the actual parsing.
@@ -128,8 +139,8 @@ func (p *Parser) Parse() (Selector, error) {
 		return nil, ErrInvalidSelector
 	}
 
-	if !p.skipValidation {
-		err = selector.Validate()
+	if !p.SkipValidation {
+		err = selector.Validate(p.ValidationRulesOrDefault())
 		if err != nil {
 			return nil, err
 		}
@@ -266,7 +277,7 @@ func (p *Parser) readOp() (string, error) {
 			}
 			return "", ErrInvalidOperator
 		case 1: // =
-			if p.isWhitespace(ch) || p.isAlpha(ch) || ch == Comma {
+			if unicode.IsSpace(ch) || IsAlpha(ch) || ch == Comma {
 				return string(op), nil
 			}
 			if ch == Equal {
@@ -336,10 +347,10 @@ func (p *Parser) readWord() string {
 	for {
 		ch = p.current()
 
-		if p.isWhitespace(ch) {
+		if unicode.IsSpace(ch) {
 			return string(word)
 		}
-		if p.isSpecialSymbol(ch) {
+		if IsSelectorSymbol(ch) {
 			return string(word)
 		}
 
@@ -353,12 +364,13 @@ func (p *Parser) readWord() string {
 }
 
 func (p *Parser) readCSV() (results []string, err error) {
-	// skip preceding whitespace
-	p.skipWhiteSpace()
 
 	var word []rune
 	var ch rune
 	var state int
+
+	// skip preceding whitespace
+	p.skipWhiteSpace()
 
 	for {
 		ch = p.current()
@@ -398,15 +410,10 @@ func (p *Parser) readCSV() (results []string, err error) {
 				return
 			}
 
-			if p.isWhitespace(ch) {
+			if unicode.IsSpace(ch) {
 				state = 3
 				p.advance()
 				continue
-			}
-
-			if !p.isValidValue(ch) {
-				err = ErrInvalidSelector
-				return
 			}
 
 			word = append(word, ch)
@@ -420,7 +427,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				return
 			}
 
-			if p.isWhitespace(ch) {
+			if unicode.IsSpace(ch) {
 				p.advance()
 				continue
 			}
@@ -430,7 +437,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				continue
 			}
 
-			if p.isAlpha(ch) {
+			if IsAlpha(ch) {
 				state = 1
 				continue
 			}
@@ -448,7 +455,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				return
 			}
 
-			if p.isWhitespace(ch) {
+			if unicode.IsSpace(ch) {
 				p.advance()
 				continue
 			}
@@ -477,7 +484,7 @@ func (p *Parser) skipWhiteSpace() {
 	var ch rune
 	for {
 		ch = p.current()
-		if !p.isWhitespace(ch) {
+		if !unicode.IsSpace(ch) {
 			return
 		}
 		p.advance()
@@ -496,7 +503,7 @@ func (p *Parser) skipToComma() (ch rune) {
 		if ch == Comma {
 			return
 		}
-		if !p.isWhitespace(ch) {
+		if !unicode.IsSpace(ch) {
 			return
 		}
 		p.advance()
@@ -506,25 +513,20 @@ func (p *Parser) skipToComma() (ch rune) {
 	}
 }
 
-// isWhitespace returns true if the rune is a space, tab, or newline.
-func (p *Parser) isWhitespace(ch rune) bool {
-	return ch == Space || ch == Tab || ch == CarriageReturn || ch == NewLine
-}
-
-// isSpecialSymbol returns if the ch is on the selector symbol list.
-func (p *Parser) isSpecialSymbol(ch rune) bool {
-	return isSelectorSymbol(ch)
-}
-
 // isTerminator returns if we've reached the end of the string
 func (p *Parser) isTerminator(ch rune) bool {
 	return ch == 0
 }
 
-func (p *Parser) isAlpha(ch rune) bool {
-	return isAlpha(ch)
+// these are dead helpers.
+
+/*
+// isWhitespace returns true if the rune is a space, tab, or newline.
+func (p *Parser) isWhitespace(ch rune) bool {
+	return ch == Space || ch == Tab || ch == CarriageReturn || ch == NewLine
 }
 
 func (p *Parser) isValidValue(ch rune) bool {
-	return isAlpha(ch) || isNameSymbol(ch)
+	return IsAlpha(ch) || p.ValidationRulesOrDefault().IsNameSymbol(ch)
 }
+*/

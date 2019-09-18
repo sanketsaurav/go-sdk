@@ -5,11 +5,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/blend/go-sdk/assert"
+	assert "github.com/blend/go-sdk/assert"
 )
 
 func TestCheckKey(t *testing.T) {
 	assert := assert.New(t)
+
+	vo := DefaultValidationRules
 
 	assert.Nil(CheckKey("foo"))
 	assert.Nil(CheckKey("bar/foo"))
@@ -23,13 +25,13 @@ func TestCheckKey(t *testing.T) {
 	assert.NotNil(CheckKey(""), "should error on empty keys")
 
 	assert.NotNil(CheckKey("/foo"), "should error on empty dns prefixes")
-	superLongDNSPrefixed := fmt.Sprintf("%s/%s", strings.Repeat("a", MaxDNSPrefixLen), strings.Repeat("a", MaxKeyLen))
+	superLongDNSPrefixed := fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen), strings.Repeat("a", vo.MaxKeyLen))
 	assert.Nil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
-	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", MaxDNSPrefixLen+1), strings.Repeat("a", MaxKeyLen))
+	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen+1), strings.Repeat("a", vo.MaxKeyLen))
 	assert.NotNil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
-	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", MaxDNSPrefixLen+1), strings.Repeat("a", MaxKeyLen+1))
+	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen+1), strings.Repeat("a", vo.MaxKeyLen+1))
 	assert.NotNil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
-	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", MaxDNSPrefixLen), strings.Repeat("a", MaxKeyLen+1))
+	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen), strings.Repeat("a", vo.MaxKeyLen+1))
 	assert.NotNil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
 }
 
@@ -73,7 +75,7 @@ func TestCheckKeyK8S(t *testing.T) {
 		assert.Nil(CheckKey(val))
 	}
 	for _, val := range badValues {
-		assert.NotNil(CheckKey(val))
+		assert.NotNil(CheckKey(val), val)
 	}
 }
 
@@ -86,22 +88,6 @@ func TestCheckValue(t *testing.T) {
 	assert.NotNil(CheckValue("_bar_baz"))
 	assert.NotNil(CheckValue("bar_baz_"))
 	assert.NotNil(CheckValue("_bar_baz_"))
-}
-
-func TestIsAlpha(t *testing.T) {
-	assert := assert.New(t)
-
-	assert.True(isAlpha('A'))
-	assert.True(isAlpha('a'))
-	assert.True(isAlpha('Z'))
-	assert.True(isAlpha('z'))
-	assert.True(isAlpha('0'))
-	assert.True(isAlpha('9'))
-	assert.True(isAlpha('함'))
-	assert.True(isAlpha('é'))
-	assert.False(isAlpha('-'))
-	assert.False(isAlpha('/'))
-	assert.False(isAlpha('~'))
 }
 
 func TestCheckLabels(t *testing.T) {

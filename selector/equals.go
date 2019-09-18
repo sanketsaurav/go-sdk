@@ -2,6 +2,10 @@ package selector
 
 import "fmt"
 
+var (
+	_ Selector = (*Equals)(nil)
+)
+
 // Equals returns if a key strictly equals a value.
 type Equals struct {
 	Key, Value string
@@ -16,12 +20,12 @@ func (e Equals) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector.
-func (e Equals) Validate() (err error) {
-	err = CheckKey(e.Key)
+func (e Equals) Validate(vr ValidationRules) (err error) {
+	err = vr.CheckKey(e.Key)
 	if err != nil {
 		return
 	}
-	err = CheckValue(e.Value)
+	err = vr.CheckValue(e.Value)
 	return
 }
 

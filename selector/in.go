@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+var (
+	_ Selector = (*In)(nil)
+)
+
 // In returns if a key matches a set of values.
 type In struct {
 	Key    string
@@ -28,13 +32,13 @@ func (i In) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector.
-func (i In) Validate() (err error) {
-	err = CheckKey(i.Key)
+func (i In) Validate(vr ValidationRules) (err error) {
+	err = vr.CheckKey(i.Key)
 	if err != nil {
 		return
 	}
 	for _, v := range i.Values {
-		err = CheckValue(v)
+		err = vr.CheckValue(v)
 		if err != nil {
 			return
 		}

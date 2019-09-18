@@ -2,6 +2,10 @@ package selector
 
 import "fmt"
 
+var (
+	_ Selector = (*NotEquals)(nil)
+)
+
 // NotEquals returns if a key strictly equals a value.
 type NotEquals struct {
 	Key, Value string
@@ -16,12 +20,12 @@ func (ne NotEquals) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector.
-func (ne NotEquals) Validate() (err error) {
-	err = CheckKey(ne.Key)
+func (ne NotEquals) Validate(vr ValidationRules) (err error) {
+	err = vr.CheckKey(ne.Key)
 	if err != nil {
 		return
 	}
-	err = CheckValue(ne.Value)
+	err = vr.CheckValue(ne.Value)
 	return
 }
 

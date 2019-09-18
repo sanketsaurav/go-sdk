@@ -1,5 +1,9 @@
 package selector
 
+var (
+	_ Selector = (*HasKey)(nil)
+)
+
 // HasKey returns if a label set has a given key.
 type HasKey string
 
@@ -10,7 +14,7 @@ func (hk HasKey) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector.
-func (hk HasKey) Validate() (err error) {
+func (hk HasKey) Validate(vr ValidationRules) (err error) {
 	err = CheckKey(string(hk))
 	return
 }

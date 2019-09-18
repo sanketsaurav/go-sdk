@@ -2,6 +2,10 @@ package selector
 
 import "fmt"
 
+var (
+	_ Selector = (*NotHasKey)(nil)
+)
+
 // NotHasKey returns if a label set does not have a given key.
 type NotHasKey string
 
@@ -14,8 +18,8 @@ func (nhk NotHasKey) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector.
-func (nhk NotHasKey) Validate() (err error) {
-	err = CheckKey(string(nhk))
+func (nhk NotHasKey) Validate(vr ValidationRules) (err error) {
+	err = vr.CheckKey(string(nhk))
 	return
 }
 

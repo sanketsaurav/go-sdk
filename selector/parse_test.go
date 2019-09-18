@@ -250,7 +250,7 @@ func TestParseOptions(t *testing.T) {
 	assert.NotNil(err)
 	assert.Nil(sel)
 
-	sel, err = Parse(selQuery, SkipValidation)
+	sel, err = Parse(selQuery, OptSkipValidation())
 	assert.Nil(err)
 	assert.NotNil(sel)
 

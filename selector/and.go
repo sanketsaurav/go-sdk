@@ -2,6 +2,10 @@ package selector
 
 import "strings"
 
+var (
+	_ Selector = (*And)(nil)
+)
+
 // And is a combination selector.
 type And []Selector
 
@@ -16,9 +20,9 @@ func (a And) Matches(labels Labels) bool {
 }
 
 // Validate validates all the selectors in the clause.
-func (a And) Validate() (err error) {
+func (a And) Validate(vr ValidationRules) (err error) {
 	for _, s := range a {
-		err = s.Validate()
+		err = s.Validate(vr)
 		if err != nil {
 			return
 		}

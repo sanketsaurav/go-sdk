@@ -7,40 +7,6 @@ import (
 	assert "github.com/blend/go-sdk/assert"
 )
 
-func TestParserIsWhitespace(t *testing.T) {
-	assert := assert.New(t)
-
-	l := &Parser{}
-	assert.True(l.isWhitespace(' '))
-	assert.True(l.isWhitespace('\n'))
-	assert.True(l.isWhitespace('\r'))
-	assert.True(l.isWhitespace('\t'))
-
-	assert.False(l.isWhitespace('a'))
-	assert.False(l.isWhitespace('z'))
-	assert.False(l.isWhitespace('A'))
-	assert.False(l.isWhitespace('Z'))
-	assert.False(l.isWhitespace('1'))
-	assert.False(l.isWhitespace('-'))
-}
-
-func TestParserIsAlpha(t *testing.T) {
-	assert := assert.New(t)
-
-	l := &Parser{}
-	assert.True(l.isAlpha('a'))
-	assert.True(l.isAlpha('z'))
-	assert.True(l.isAlpha('A'))
-	assert.True(l.isAlpha('Z'))
-	assert.True(l.isAlpha('1'))
-
-	assert.False(l.isAlpha('-'))
-	assert.False(l.isAlpha(' '))
-	assert.False(l.isAlpha('\n'))
-	assert.False(l.isAlpha('\r'))
-	assert.False(l.isAlpha('\t'))
-}
-
 func TestParserSkipWhitespace(t *testing.T) {
 	assert := assert.New(t)
 

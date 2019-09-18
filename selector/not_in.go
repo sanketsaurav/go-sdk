@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+var (
+	_ Selector = (*NotIn)(nil)
+)
+
 // NotIn returns if a key does not match a set of values.
 type NotIn struct {
 	Key    string
@@ -26,13 +30,13 @@ func (ni NotIn) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector.
-func (ni NotIn) Validate() (err error) {
-	err = CheckKey(ni.Key)
+func (ni NotIn) Validate(vr ValidationRules) (err error) {
+	err = vr.CheckKey(ni.Key)
 	if err != nil {
 		return
 	}
 	for _, v := range ni.Values {
-		err = CheckValue(v)
+		err = vr.CheckValue(v)
 		if err != nil {
 			return
 		}

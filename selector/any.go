@@ -1,5 +1,9 @@
 package selector
 
+var (
+	_ Selector = (*Any)(nil)
+)
+
 // Any matches everything
 type Any struct{}
 
@@ -9,7 +13,7 @@ func (a Any) Matches(labels Labels) bool {
 }
 
 // Validate validates the selector
-func (a Any) Validate() (err error) {
+func (a Any) Validate(ValidationRules) (err error) {
 	return nil
 }
 

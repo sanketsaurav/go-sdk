@@ -1,9 +1,18 @@
 package selector
 
 // Option is a tweak to selector parsing.
-type Option func(p *Parser)
+type Option func(po *Parser)
 
-// SkipValidation is an option to skip checking the values of selector expressions.
-func SkipValidation(p *Parser) {
-	p.skipValidation = true
+// OptValidationRules is an option to set the validation rules for the parser.
+func OptValidationRules(vr ValidationRules) Option {
+	return func(p *Parser) {
+		p.ValidationRules = vr
+	}
+}
+
+// OptSkipValidation is an option to skip checking the values of selector expressions.
+func OptSkipValidation() Option {
+	return func(p *Parser) {
+		p.SkipValidation = true
+	}
 }
