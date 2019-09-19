@@ -237,7 +237,7 @@ func TestParseMultiByte(t *testing.T) {
 	assert.Len(typed, 2)
 }
 
-func TestParseOptions(t *testing.T) {
+func TestParseOptionsSkipValidation(t *testing.T) {
 	assert := assert.New(t)
 
 	selQuery := "bar=foo@bar"
@@ -255,6 +255,35 @@ func TestParseOptions(t *testing.T) {
 	assert.NotNil(sel)
 
 	assert.True(sel.Matches(labels))
+}
+
+func TestParseOptionNameSymbols(t *testing.T) {
+	assert := assert.New(t)
+
+	selQuery := "bar=*.bar.foo"
+	matchLabels := Labels{
+		"foo": "bar",
+		"bar": "*.bar.foo",
+	}
+	invalidLabels := Labels{
+		"foo": "bar",
+		"bar": "*.foo.bar",
+	}
+
+	sel, err := Parse(selQuery)
+	assert.NotNil(err)
+	assert.Nil(sel)
+
+	sel, err = Parse(selQuery,
+		OptAllowSymbolRepeats(),
+		OptAllowSymbolPrefix(),
+		OptNameSymbols(append(DefaultNameSymbols, Star)...),
+	)
+	assert.Nil(err)
+	assert.NotNil(sel)
+
+	assert.True(sel.Matches(matchLabels))
+	assert.False(sel.Matches(invalidLabels))
 }
 
 func BenchmarkParse(b *testing.B) {

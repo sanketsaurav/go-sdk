@@ -1,11 +1,29 @@
 package selector
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	assert "github.com/blend/go-sdk/assert"
 )
+
+func TestParserIsAlpha(t *testing.T) {
+	assert := assert.New(t)
+
+	p := new(Parser)
+	assert.True(p.isAlpha('a'))
+	assert.True(p.isAlpha('z'))
+	assert.True(p.isAlpha('A'))
+	assert.True(p.isAlpha('Z'))
+	assert.True(p.isAlpha('1'))
+
+	assert.False(p.isAlpha('-'))
+	assert.False(p.isAlpha(' '))
+	assert.False(p.isAlpha('\n'))
+	assert.False(p.isAlpha('\r'))
+	assert.False(p.isAlpha('\t'))
+}
 
 func TestParserSkipWhitespace(t *testing.T) {
 	assert := assert.New(t)
@@ -250,4 +268,96 @@ func TestParserLex(t *testing.T) {
 	l := &Parser{s: ""}
 	_, err := l.Parse()
 	assert.Nil(err)
+}
+
+func TestParserCheckKey(t *testing.T) {
+	assert := assert.New(t)
+
+	p := new(Parser)
+	assert.Nil(p.CheckKey("foo"))
+	assert.Nil(p.CheckKey("bar/foo"))
+	assert.Nil(p.CheckKey("bar.io/foo"))
+	assert.NotNil(p.CheckKey("_foo"))
+	assert.NotNil(p.CheckKey("-foo"))
+	assert.NotNil(p.CheckKey("foo-"))
+	assert.NotNil(p.CheckKey("foo_"))
+	assert.NotNil(p.CheckKey("bar/foo/baz"))
+
+	assert.NotNil(p.CheckKey(""), "should error on empty keys")
+
+	assert.NotNil(p.CheckKey("/foo"), "should error on empty dns prefixes")
+	superLongDNSPrefixed := fmt.Sprintf("%s/%s", strings.Repeat("a", p.MaxDNSPrefixLenOrDefault()), strings.Repeat("a", p.MaxKeyLenOrDefault()))
+	assert.Nil(p.CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
+	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", p.MaxDNSPrefixLenOrDefault()+1), strings.Repeat("a", p.MaxKeyLenOrDefault()))
+	assert.NotNil(p.CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
+	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", p.MaxDNSPrefixLenOrDefault()+1), strings.Repeat("a", p.MaxKeyLenOrDefault()+1))
+	assert.NotNil(p.CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
+	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", p.MaxDNSPrefixLenOrDefault()), strings.Repeat("a", p.MaxKeyLenOrDefault()+1))
+	assert.NotNil(p.CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
+}
+
+func TestParserCheckKeyK8S(t *testing.T) {
+	assert := assert.New(t)
+
+	p := new(Parser)
+
+	values := []string{
+		// the "good" cases
+		"simple",
+		"now-with-dashes",
+		"1-starts-with-num",
+		"1234",
+		"simple/simple",
+		"now-with-dashes/simple",
+		"now-with-dashes/now-with-dashes",
+		"now.with.dots/simple",
+		"now-with.dashes-and.dots/simple",
+		"1-num.2-num/3-num",
+		"1234/5678",
+		"1.2.3.4/5678",
+		"Uppercase_Is_OK_123",
+		"example.com/Uppercase_Is_OK_123",
+		"requests.storage-foo",
+		strings.Repeat("a", 63),
+		strings.Repeat("a", 253) + "/" + strings.Repeat("b", 63),
+	}
+	badValues := []string{
+		// the "bad" cases
+		"nospecialchars%^=@",
+		"cantendwithadash-",
+		"-cantstartwithadash-",
+		"only/one/slash",
+		"Example.com/abc",
+		"example_com/abc",
+		"example.com/",
+		"/simple",
+		strings.Repeat("a", 64),
+		strings.Repeat("a", 254) + "/abc",
+	}
+	for _, val := range values {
+		assert.Nil(p.CheckKey(val))
+	}
+	for _, val := range badValues {
+		assert.NotNil(p.CheckKey(val), val)
+	}
+}
+
+func TestParserCheckValue(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.Nil(CheckValue(""), "should not error on empty values")
+	assert.Nil(CheckValue("foo"))
+	assert.Nil(CheckValue("bar_baz"))
+	assert.NotNil(CheckValue("_bar_baz"))
+	assert.NotNil(CheckValue("bar_baz_"))
+	assert.NotNil(CheckValue("_bar_baz_"))
+}
+
+func TestParserCheckLabels(t *testing.T) {
+	assert := assert.New(t)
+
+	goodLabels := Labels{"foo": "bar", "foo.com/bar": "baz"}
+	assert.Nil(CheckLabels(goodLabels))
+	badLabels := Labels{"foo": "bar", "_foo.com/bar": "baz"}
+	assert.NotNil(CheckLabels(badLabels))
 }

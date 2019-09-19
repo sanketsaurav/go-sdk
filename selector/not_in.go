@@ -29,21 +29,6 @@ func (ni NotIn) Matches(labels Labels) bool {
 	return true
 }
 
-// Validate validates the selector.
-func (ni NotIn) Validate(vr ValidationRules) (err error) {
-	err = vr.CheckKey(ni.Key)
-	if err != nil {
-		return
-	}
-	for _, v := range ni.Values {
-		err = vr.CheckValue(v)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
 // String returns a string representation of the selector.
 func (ni NotIn) String() string {
 	return fmt.Sprintf("%s notin (%s)", ni.Key, strings.Join(ni.Values, ", "))

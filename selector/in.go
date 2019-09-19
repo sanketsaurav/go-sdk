@@ -31,21 +31,6 @@ func (i In) Matches(labels Labels) bool {
 	return true
 }
 
-// Validate validates the selector.
-func (i In) Validate(vr ValidationRules) (err error) {
-	err = vr.CheckKey(i.Key)
-	if err != nil {
-		return
-	}
-	for _, v := range i.Values {
-		err = vr.CheckValue(v)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
 // String returns a string representation of the selector.
 func (i In) String() string {
 	return fmt.Sprintf("%s in (%s)", i.Key, strings.Join(i.Values, ", "))

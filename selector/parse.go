@@ -31,7 +31,12 @@ package selector
 //  (5) A requirement with just !KEY requires that the KEY not exist.
 //
 func Parse(query string, opts ...Option) (Selector, error) {
-	p := &Parser{s: query}
+	p := &Parser{
+		MaxDNSPrefixLen: DefaultMaxDNSPrefixLen,
+		MaxKeyLen:       DefaultMaxKeyLen,
+		MaxValueLen:     DefaultMaxValueLen,
+		s:               query,
+	}
 	for _, opt := range opts {
 		opt(p)
 	}

@@ -19,17 +19,6 @@ func (a And) Matches(labels Labels) bool {
 	return true
 }
 
-// Validate validates all the selectors in the clause.
-func (a And) Validate(vr ValidationRules) (err error) {
-	for _, s := range a {
-		err = s.Validate(vr)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
 // And returns a string representation for the selector.
 func (a And) String() string {
 	var childValues []string

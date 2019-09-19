@@ -16,15 +16,15 @@ func CheckLabels(labels Labels) error {
 
 // CheckKey validates a key with the default validation options.
 func CheckKey(key string) error {
-	return DefaultValidationRules.CheckKey(key)
+	return new(Parser).CheckKey(key)
 }
 
 // CheckValue returns if the value is valid with the default validation options.
 func CheckValue(value string) error {
-	return DefaultValidationRules.CheckValue(value)
+	return new(Parser).CheckValue(value)
 }
 
 // CheckDNS returns if a given string is a valid dns name with a given set of options.
 func CheckDNS(dnsName string) error {
-	return DefaultValidationRules.CheckDNS(dnsName)
+	return new(Parser).CheckDNS(dnsName)
 }

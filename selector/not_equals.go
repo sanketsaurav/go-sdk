@@ -19,16 +19,6 @@ func (ne NotEquals) Matches(labels Labels) bool {
 	return true
 }
 
-// Validate validates the selector.
-func (ne NotEquals) Validate(vr ValidationRules) (err error) {
-	err = vr.CheckKey(ne.Key)
-	if err != nil {
-		return
-	}
-	err = vr.CheckValue(ne.Value)
-	return
-}
-
 // String returns a string representation of the selector.
 func (ne NotEquals) String() string {
 	return fmt.Sprintf("%s != %s", ne.Key, ne.Value)

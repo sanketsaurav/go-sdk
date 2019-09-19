@@ -1,42 +1,25 @@
 package selector
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
 	assert "github.com/blend/go-sdk/assert"
 )
 
-func TestCheckKey(t *testing.T) {
+func TestCheckLabels(t *testing.T) {
 	assert := assert.New(t)
 
-	vo := DefaultValidationRules
-
-	assert.Nil(CheckKey("foo"))
-	assert.Nil(CheckKey("bar/foo"))
-	assert.Nil(CheckKey("bar.io/foo"))
-	assert.NotNil(CheckKey("_foo"))
-	assert.NotNil(CheckKey("-foo"))
-	assert.NotNil(CheckKey("foo-"))
-	assert.NotNil(CheckKey("foo_"))
-	assert.NotNil(CheckKey("bar/foo/baz"))
-
-	assert.NotNil(CheckKey(""), "should error on empty keys")
-
-	assert.NotNil(CheckKey("/foo"), "should error on empty dns prefixes")
-	superLongDNSPrefixed := fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen), strings.Repeat("a", vo.MaxKeyLen))
-	assert.Nil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
-	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen+1), strings.Repeat("a", vo.MaxKeyLen))
-	assert.NotNil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
-	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen+1), strings.Repeat("a", vo.MaxKeyLen+1))
-	assert.NotNil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
-	superLongDNSPrefixed = fmt.Sprintf("%s/%s", strings.Repeat("a", vo.MaxDNSPrefixLen), strings.Repeat("a", vo.MaxKeyLen+1))
-	assert.NotNil(CheckKey(superLongDNSPrefixed), len(superLongDNSPrefixed))
+	goodLabels := Labels{"foo": "bar", "foo.com/bar": "baz"}
+	assert.Nil(CheckLabels(goodLabels))
+	badLabels := Labels{"foo": "bar", "_foo.com/bar": "baz"}
+	assert.NotNil(CheckLabels(badLabels))
 }
 
 func TestCheckKeyK8S(t *testing.T) {
 	assert := assert.New(t)
+
+	p := new(Parser)
 
 	values := []string{
 		// the "good" cases
@@ -72,10 +55,10 @@ func TestCheckKeyK8S(t *testing.T) {
 		strings.Repeat("a", 254) + "/abc",
 	}
 	for _, val := range values {
-		assert.Nil(CheckKey(val))
+		assert.Nil(p.CheckKey(val))
 	}
 	for _, val := range badValues {
-		assert.NotNil(CheckKey(val), val)
+		assert.NotNil(p.CheckKey(val), val)
 	}
 }
 
@@ -88,13 +71,4 @@ func TestCheckValue(t *testing.T) {
 	assert.NotNil(CheckValue("_bar_baz"))
 	assert.NotNil(CheckValue("bar_baz_"))
 	assert.NotNil(CheckValue("_bar_baz_"))
-}
-
-func TestCheckLabels(t *testing.T) {
-	assert := assert.New(t)
-
-	goodLabels := Labels{"foo": "bar", "foo.com/bar": "baz"}
-	assert.Nil(CheckLabels(goodLabels))
-	badLabels := Labels{"foo": "bar", "_foo.com/bar": "baz"}
-	assert.NotNil(CheckLabels(badLabels))
 }

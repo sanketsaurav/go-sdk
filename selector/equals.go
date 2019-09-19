@@ -19,16 +19,6 @@ func (e Equals) Matches(labels Labels) bool {
 	return false
 }
 
-// Validate validates the selector.
-func (e Equals) Validate(vr ValidationRules) (err error) {
-	err = vr.CheckKey(e.Key)
-	if err != nil {
-		return
-	}
-	err = vr.CheckValue(e.Value)
-	return
-}
-
 // String returns the string representation of the selector.
 func (e Equals) String() string {
 	return fmt.Sprintf("%s == %s", e.Key, e.Value)
