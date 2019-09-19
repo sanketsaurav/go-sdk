@@ -2,7 +2,6 @@ package selector
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -29,9 +28,18 @@ type Parser struct {
 	MaxKeyLen int
 	// MaxValueLen is the maximum value length.
 	MaxValueLen int
-	// NameSymbols are the symbols that can be in name
-	// (either keys or values) in addition to alphanumeric characters.
-	NameSymbols map[rune]struct{}
+	// IsSymbol is a handler that returns if a rune is a symbol.
+	IsSymbol func(rune) bool
+	// IsSelectorSymbol is a handler that returns if a rune is a selector symbol.
+	IsSelectorSymbol func(rune) bool
+	// IsNameSymbol is a handler that returns if a rune is a name symbol.
+	IsNameSymbol func(rune) bool
+	// IsLowerAlpha is a handler that returns if a rune is an lowercase alphanumeric.
+	IsLowerAlpha func(rune) bool
+	// IsAlpha is a handler that returns if a rune is an alphanumeric.
+	IsAlpha func(rune) bool
+	// IsSpace is a handler that returns if a rune is an alphanumeric.
+	IsSpace func(rune) bool
 
 	// s stores the string to be tokenized
 	s string
@@ -75,6 +83,7 @@ func (p *Parser) Parse() (Selector, error) {
 			return nil, err
 		}
 
+		// mark the end of the current key
 		p.mark()
 
 		// check if the next character after the word is a comma
@@ -140,7 +149,7 @@ func (p *Parser) Parse() (Selector, error) {
 			break
 		}
 
-		return nil, ErrInvalidSelector
+		return nil, p.errInvalidSelector()
 	}
 
 	return selector, nil
@@ -413,7 +422,7 @@ func (p *Parser) readOp() (string, error) {
 			}
 			return "", ErrInvalidOperator
 		case 1: // =
-			if unicode.IsSpace(ch) || p.isAlpha(ch) || p.isNameSymbol(ch) || ch == Comma {
+			if p.isSpace(ch) || p.isAlpha(ch) || p.isNameSymbol(ch) || ch == Comma {
 				return string(op), nil
 			}
 			if ch == Equal {
@@ -483,16 +492,14 @@ func (p *Parser) readWord() string {
 	for {
 		ch = p.current()
 
-		if unicode.IsSpace(ch) {
+		if p.isSpace(ch) {
 			return string(word)
 		}
 		if p.isSelectorSymbol(ch) {
 			return string(word)
 		}
-
 		word = append(word, ch)
 		p.advance()
-
 		if p.done() {
 			return string(word)
 		}
@@ -511,7 +518,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 		ch = p.current()
 
 		if p.done() {
-			err = ErrInvalidSelector
+			err = p.errInvalidSelector()
 			return
 		}
 
@@ -523,7 +530,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				continue
 			}
 			// not open parens, bail
-			err = ErrInvalidSelector
+			err = p.errInvalidSelector()
 			return
 		case 1: // alphas (in word)
 
@@ -551,7 +558,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				return
 			}
 
-			if unicode.IsSpace(ch) {
+			if p.isSpace(ch) {
 				state = 3
 				p.advance()
 				continue
@@ -567,23 +574,19 @@ func (p *Parser) readCSV() (results []string, err error) {
 				p.advance()
 				return
 			}
-
-			if unicode.IsSpace(ch) {
+			if p.isSpace(ch) {
 				p.advance()
 				continue
 			}
-
 			if ch == Comma {
 				p.advance()
 				continue
 			}
-
 			if p.isAlpha(ch) {
 				state = 1
 				continue
 			}
-
-			err = ErrInvalidSelector
+			err = p.errInvalidSelector()
 			return
 
 		case 3: //whitespace after alpha
@@ -599,7 +602,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				return
 			}
 
-			if unicode.IsSpace(ch) {
+			if p.isSpace(ch) {
 				p.advance()
 				continue
 			}
@@ -617,7 +620,7 @@ func (p *Parser) readCSV() (results []string, err error) {
 				continue
 			}
 
-			err = ErrInvalidSelector
+			err = p.errInvalidSelector()
 			return
 		}
 	}
@@ -630,7 +633,7 @@ func (p *Parser) skipWhiteSpace() {
 	var ch rune
 	for {
 		ch = p.current()
-		if !unicode.IsSpace(ch) {
+		if !p.isSpace(ch) {
 			return
 		}
 		p.advance()
@@ -649,7 +652,7 @@ func (p *Parser) skipToComma() (ch rune) {
 		if ch == Comma {
 			return
 		}
-		if !unicode.IsSpace(ch) {
+		if !p.isSpace(ch) {
 			return
 		}
 		p.advance()
@@ -660,67 +663,56 @@ func (p *Parser) skipToComma() (ch rune) {
 }
 
 func (p *Parser) errKeyInvalidCharacter() error {
-	var nameSymbols []string
-	if len(p.NameSymbols) > 0 {
-		for ch := range p.NameSymbols {
-			if ch == Dot || ch == Star {
-				nameSymbols = append(nameSymbols, "\\"+string(ch))
-			} else {
-				nameSymbols = append(nameSymbols, string(ch))
-			}
-		}
-	} else {
-		for _, ch := range DefaultNameSymbols {
-			if ch == Dot || ch == Star {
-				nameSymbols = append(nameSymbols, "\\"+string(ch))
-			} else {
-				nameSymbols = append(nameSymbols, string(ch))
-			}
-		}
-	}
-	sort.Strings(nameSymbols)
-	msg := fmt.Sprintf("regex used: [A-Za-z0-9%s]", strings.Join(nameSymbols, ""))
 	return &ex.Ex{
-		Class:   ErrKeyInvalidCharacter,
-		Message: msg,
+		Class: ErrKeyInvalidCharacter,
 	}
 }
 
+func (p *Parser) errInvalidSelector() error {
+	return &ex.Ex{
+		Class:   ErrInvalidSelector,
+		Message: fmt.Sprintf("selector: %s", p.s),
+	}
+}
+
+// IsSymbol returns if a rune is a symbol.
+// If a custom handler is specified (IsSymbol) that is used, otherwise
+// the default logic is used.
+func (p *Parser) isSymbol(ch rune) bool {
+	if p.IsSymbol != nil {
+		return p.IsSymbol(ch)
+	}
+	return IsSymbol(ch)
+}
+
+// IsNameSymbol returns if a rune is a name symbol.
+// If a custom handler is specified (IsNameSymbol) that is used, otherwise
+// the default logic is used.
 func (p *Parser) isNameSymbol(ch rune) bool {
-	if len(p.NameSymbols) > 0 {
-		if _, ok := p.NameSymbols[ch]; ok {
-			return true
-		}
-		return false
+	if p.IsNameSymbol != nil {
+		return p.IsNameSymbol(ch)
 	}
-	// handle defaults
-	switch ch {
-	case Dot, Dash, Underscore:
-		return true
-	}
-	return false
+	return IsNameSymbol(ch)
 }
 
 // isSelectorSymbol returns if a rune is allowed in a
 // selector phrase [i.e. ! =  (  ) , ]
+// If a custom handler is specified (IsSelectorSymbol) that is used, otherwise
+// the default logic is used.
 func (p *Parser) isSelectorSymbol(ch rune) bool {
-	switch ch {
-	case Equal, Bang, OpenParens, CloseParens, Comma:
-		return true
+	if p.IsSelectorSymbol != nil {
+		return p.IsSelectorSymbol(ch)
 	}
-	return false
-}
-
-// IsSymbol returns if a rune is a symbol.
-func (p *Parser) isSymbol(ch rune) bool {
-	return (int(ch) >= int(Bang) && int(ch) <= int(ForwardSlash)) ||
-		(int(ch) >= int(Colon) && int(ch) <= int(At)) ||
-		(int(ch) >= int(OpenBracket) && int(ch) <= int(BackTick)) ||
-		(int(ch) >= int(OpenCurly) && int(ch) <= int(Tilde))
+	return IsSelectorSymbol(ch)
 }
 
 // isLowerAlpha returns if a rune is a lower cased alphanumeric.
+// If a custom handler is specified (IsLowerAlpha) that is used, otherwise
+// the default logic is used (If letter, isLower, or isAlpha)
 func (p *Parser) isLowerAlpha(ch rune) bool {
+	if p.IsLowerAlpha != nil {
+		return p.IsLowerAlpha(ch)
+	}
 	if unicode.IsLetter(ch) {
 		return unicode.IsLower(ch)
 	}
@@ -728,8 +720,23 @@ func (p *Parser) isLowerAlpha(ch rune) bool {
 }
 
 // isAlpha returns if a rune is not a space, control or symbol.
+// If a custom handler is specified (IsAlpha) that is used, otherwise
+// the default logic is used (!space, !control, !symbol)
 func (p *Parser) isAlpha(ch rune) bool {
-	return !unicode.IsSpace(ch) && !unicode.IsControl(ch) && !p.isSymbol(ch)
+	if p.IsAlpha != nil {
+		return p.IsAlpha(ch)
+	}
+	return !p.isSpace(ch) && !unicode.IsControl(ch) && !p.isSymbol(ch)
+}
+
+// isSpace returns if a rune is a space rune (tab, newline, space etc.)
+// If a custom handler is specified (IsSpace) that is used, otherwise
+// unicode.IsSpace is used.
+func (p *Parser) isSpace(ch rune) bool {
+	if p.IsSpace != nil {
+		return p.IsSpace(ch)
+	}
+	return unicode.IsSpace(ch)
 }
 
 func (p *Parser) isTerminator(ch rune) bool {

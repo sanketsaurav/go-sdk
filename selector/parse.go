@@ -32,10 +32,7 @@ package selector
 //
 func Parse(query string, opts ...Option) (Selector, error) {
 	p := &Parser{
-		MaxDNSPrefixLen: DefaultMaxDNSPrefixLen,
-		MaxKeyLen:       DefaultMaxKeyLen,
-		MaxValueLen:     DefaultMaxValueLen,
-		s:               query,
+		s: query,
 	}
 	for _, opt := range opts {
 		opt(p)

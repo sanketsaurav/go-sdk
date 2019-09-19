@@ -44,7 +44,8 @@ const (
 
 // Validation defaults
 var (
-	DefaultNameSymbols = []rune{Dot, Dash, Underscore}
+	DefaultNameSymbols     = []rune{Dot, Dash, Underscore}
+	DefaultSelectorSymbols = []rune{Equal, Bang, OpenParens, CloseParens, Comma}
 )
 
 const (

@@ -3,26 +3,19 @@ package selector
 import (
 	"testing"
 
-	"github.com/blend/assert/assert"
+	"github.com/blend/go-sdk/assert"
 )
 
-func TestRunSet(t *testing.T) {
+func TestNewRuneSet(t *testing.T) {
 	assert := assert.New(t)
 
-	runeset := RuneSet(Dash, Dot, Star)
+	runeset := NewRuneSet(DefaultNameSymbols...)
 	assert.NotNil(runeset)
 	assert.NotEmpty(runeset)
 	assert.Len(runeset, 3)
 
-	_, ok := runeset[Dash]
-	assert.True(ok)
-
-	_, ok = runeset[Dot]
-	assert.True(ok)
-
-	_, ok = runeset[Star]
-	assert.True(ok)
-
-	_, ok = runeset[ForwardSlash]
-	assert.False(ok)
+	assert.True(runeset.Has(Dash))
+	assert.True(runeset.Has(Dot))
+	assert.True(runeset.Has(Underscore))
+	assert.False(runeset.Has(ForwardSlash))
 }

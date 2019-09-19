@@ -31,9 +31,16 @@ func OptAllowSymbolSuffix() Option {
 	}
 }
 
+// OptSelectorSymbols sets the allowed selector symbols.
+func OptSelectorSymbols(runes ...rune) Option {
+	return func(p *Parser) {
+		p.IsSelectorSymbol = NewRuneSet(runes...).Has
+	}
+}
+
 // OptNameSymbols sets the allowed name symbols.
 func OptNameSymbols(runes ...rune) Option {
 	return func(p *Parser) {
-		p.NameSymbols = RuneSet(runes...)
+		p.IsNameSymbol = NewRuneSet(runes...).Has
 	}
 }
