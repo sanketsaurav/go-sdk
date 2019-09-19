@@ -257,7 +257,83 @@ func TestParseOptionsSkipValidation(t *testing.T) {
 	assert.True(sel.Matches(labels))
 }
 
-func TestParseOptionNameSymbols(t *testing.T) {
+func TestParseOptionsPrefix(t *testing.T) {
+	assert := assert.New(t)
+
+	prefixQuery := "bar=_barfoo"
+	suffixQuery := "bar=barfoo_"
+	matchLabels := Labels{
+		"foo": "bar",
+		"bar": "_barfoo",
+	}
+	invalidLabels := Labels{
+		"foo": "bar",
+		"bar": "_foobar",
+	}
+
+	sel, err := Parse(prefixQuery)
+	assert.NotNil(err)
+	assert.Nil(sel)
+
+	sel, err = Parse(suffixQuery)
+	assert.NotNil(err)
+	assert.Nil(sel)
+
+	sel, err = Parse(prefixQuery,
+		OptAllowSymbolPrefix(),
+	)
+	assert.Nil(err)
+	assert.NotNil(sel)
+
+	assert.True(sel.Matches(matchLabels))
+	assert.False(sel.Matches(invalidLabels))
+
+	sel, err = Parse(suffixQuery,
+		OptAllowSymbolPrefix(),
+	)
+	assert.NotNil(err)
+	assert.Nil(sel)
+}
+
+func TestParseOptionsSuffix(t *testing.T) {
+	assert := assert.New(t)
+
+	prefixQuery := "bar=_barfoo"
+	suffixQuery := "bar=barfoo_"
+	matchLabels := Labels{
+		"foo": "bar",
+		"bar": "barfoo_",
+	}
+	invalidLabels := Labels{
+		"foo": "bar",
+		"bar": "foobar_",
+	}
+
+	sel, err := Parse(prefixQuery)
+	assert.NotNil(err)
+	assert.Nil(sel)
+
+	sel, err = Parse(suffixQuery)
+	assert.NotNil(err)
+	assert.Nil(sel)
+
+	sel, err = Parse(prefixQuery,
+		OptAllowSymbolSuffix(),
+	)
+	assert.NotNil(err)
+	assert.Nil(sel)
+
+	sel, err = Parse(suffixQuery,
+		OptAllowSymbolSuffix(),
+	)
+	assert.Nil(err)
+	assert.NotNil(sel)
+
+	assert.True(sel.Matches(matchLabels))
+	assert.False(sel.Matches(invalidLabels))
+}
+
+func TestParseOptionsSmokeSignal(t *testing.T) {
 	assert := assert.New(t)
 
 	selQuery := "bar=*.bar.foo"

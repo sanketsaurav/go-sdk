@@ -24,6 +24,13 @@ func OptAllowSymbolPrefix() Option {
 	}
 }
 
+// OptAllowSymbolSuffix allows symbol suffixes for names.
+func OptAllowSymbolSuffix() Option {
+	return func(p *Parser) {
+		p.AllowSymbolSuffix = true
+	}
+}
+
 // OptNameSymbols sets the allowed name symbols.
 func OptNameSymbols(runes ...rune) Option {
 	return func(p *Parser) {
