@@ -50,6 +50,11 @@ func TestParserReadWord(t *testing.T) {
 	assert.Equal("foo", l.readWord())
 	assert.Equal(",", string(l.current()))
 
+	l = &Parser{s: "foo,bar,baz", pos: 4}
+	assert.Equal("b", string(l.current()))
+	assert.Equal("bar", l.readWord())
+	assert.Equal(",", string(l.current()))
+
 	l = &Parser{s: "foo"}
 	assert.Equal("foo", l.readWord())
 	assert.True(l.done())
