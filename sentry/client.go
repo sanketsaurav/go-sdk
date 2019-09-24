@@ -55,10 +55,10 @@ func (c Client) Notify(ctx context.Context, ee logger.ErrorEvent) {
 
 func errEvent(ctx context.Context, ee logger.ErrorEvent) *raven.Event {
 	return &raven.Event{
-		Timestamp: logger.GetEventTimestamp(ctx, ee).Unix(),
-		Level:     raven.Level(ee.GetFlag()),
-		Tags:      errTags(ctx),
-		Extra:     errExtra(ctx),
+		Timestamp: ee.Timestamp().Unix(),
+		Level:     raven.Level(ee.Flag()),
+		Tags:      ee.Labels(),
+		Extra:     errExtra(&ee),
 		Platform:  "go",
 		Sdk: raven.SdkInfo{
 			Name:    SDK,
@@ -69,30 +69,33 @@ func errEvent(ctx context.Context, ee logger.ErrorEvent) *raven.Event {
 			}},
 		},
 		Request: errRequest(ee),
-		Message: ex.ErrClass(ee.Err).Error(),  // ex.ErrClass(ee.Err).Error(),
+		Message: ex.ErrClass(ee.Err()),
 		Exception: []raven.Exception{
 			{
-				Type:       ex.ErrClass(ee.Err).Error(),
-				Value:      ex.ErrMessage(ee.Err),
-				Stacktrace: &raven.Stacktrace{Frames: errFrames(ee.Err)},
+				Type:       ex.ErrClass(ee.Err()),
+				Value:      ex.ErrMessage(ee.Err()),
+				Stacktrace: &raven.Stacktrace{Frames: errFrames(ee.Err())},
 			},
 		},
 	}
 }
 
-func errTags(ctx context.Context) map[string]string {
-	return logger.GetLabels(ctx)
-}
+// errExtra retrives annotations for an `ErrorEvent` and converts it to an
+// interface map that can be consumed by raven
+func errExtra(ee *logger.ErrorEvent) (annotations map[string]interface{}) {
+	annotations = make(map[string]interface{})
 
-func errExtra(ctx context.Context) map[string]interface{} {
-	return logger.GetAnnotations(ctx)
+	for k, v := range ee.Annotations() {
+		annotations[k] = v
+	}
+	return
 }
 
 func errRequest(ee logger.ErrorEvent) (requestMeta raven.Request) {
 	if ee.State == nil {
 		return
 	}
-	typed, ok := ee.State.(*http.Request)
+	typed, ok := ee.State().(*http.Request)
 	if !ok {
 		return
 	}
