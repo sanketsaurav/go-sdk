@@ -84,8 +84,6 @@ func errEvent(ee *logger.ErrorEvent) *raven.Event {
 // errExtra retrives annotations for an `ErrorEvent` and converts it to an
 // interface map that can be consumed by raven
 func errExtra(ee *logger.ErrorEvent) (annotations map[string]interface{}) {
-	annotations = make(map[string]interface{})
-
 	for k, v := range ee.Annotations() {
 		annotations[k] = v
 	}
