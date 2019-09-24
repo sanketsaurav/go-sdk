@@ -104,17 +104,16 @@ func errRequest(ee *logger.ErrorEvent) (requestMeta raven.Request) {
 	return
 }
 
-func errFrames(err error) []raven.Frame {
+func errFrames(err error) (output []raven.Frame) {
 	stacktrace := ex.ErrStackTrace(err)
 	if stacktrace == nil {
-		return []raven.Frame{}
+		return
 	}
 	pointers, ok := stacktrace.(ex.StackPointers)
 	if !ok {
-		return []raven.Frame{}
+		return
 	}
 
-	var output []raven.Frame
 	runtimeFrames := runtime.CallersFrames(pointers)
 
 	for {
@@ -126,6 +125,5 @@ func errFrames(err error) []raven.Frame {
 			break
 		}
 	}
-
-	return output
+	return
 }
