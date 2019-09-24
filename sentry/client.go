@@ -8,7 +8,7 @@ import (
 
 	raven "github.com/getsentry/sentry-go"
 
-	"github.com/blend/go-sdk/ex"
+	ex "github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/logger"
 )
 
@@ -69,7 +69,7 @@ func errEvent(ctx context.Context, ee logger.ErrorEvent) *raven.Event {
 			}},
 		},
 		Request: errRequest(ee),
-		Message: ex.ErrClass(ee.Err).Error(),
+		Message: ex.ErrClass(ee.Err).Error(),  // ex.ErrClass(ee.Err).Error(),
 		Exception: []raven.Exception{
 			{
 				Type:       ex.ErrClass(ee.Err).Error(),
