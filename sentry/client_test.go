@@ -1,7 +1,6 @@
 package sentry
 
 import (
-	"context"
 	"crypto/tls"
 	"net/http"
 	"testing"
@@ -38,8 +37,7 @@ func TestNew(t *testing.T) {
 func TestErrEvent(t *testing.T) {
 	assert := assert.New(t)
 	event := errEvent(
-		context.Background(),
-		*logger.NewErrorEventWithState(
+		logger.NewErrorEventWithState(
 			logger.Fatal,
 			ex.New("this is a test"),
 			http.Request{
@@ -64,10 +62,10 @@ func TestErrEvent(t *testing.T) {
 func TestErrRequest(t *testing.T) {
 	assert := assert.New(t)
 
-	res := errRequest(logger.ErrorEvent{})
+	res := errRequest(&logger.ErrorEvent{})
 	assert.Empty(res.URL)
 
-	res = errRequest(*logger.NewErrorEventWithState(
+	res = errRequest(logger.NewErrorEventWithState(
 		logger.FlagNone,
 		ex.New("some error"),
 		&http.Request{
