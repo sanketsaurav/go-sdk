@@ -1,7 +1,6 @@
 package sentry
 
 import (
-	"context"
 	"net/http"
 	"runtime"
 	"time"
@@ -47,18 +46,20 @@ type Client struct {
 	Client *raven.Client
 }
 
-// Notify sends a notification.
-func (c Client) Notify(ctx context.Context, ee logger.ErrorEvent) {
-	c.Client.CaptureEvent(errEvent(ctx, ee), nil, raven.NewScope())
+// Notify sends a notification.  This is primarily used for the logger.
+func (c Client) Notify(ee *logger.ErrorEvent) {
+	c.Client.CaptureEvent(errEvent(ee), nil, raven.NewScope())
 	c.Client.Flush(time.Second)
 }
 
-func errEvent(ctx context.Context, ee logger.ErrorEvent) *raven.Event {
+// errEvent converts an `ErrorEvent` from the `Logger` package to a struct that
+// can be consumed by the sentry SDK.
+func errEvent(ee *logger.ErrorEvent) *raven.Event {
 	return &raven.Event{
 		Timestamp: ee.Timestamp().Unix(),
 		Level:     raven.Level(ee.Flag()),
 		Tags:      ee.Labels(),
-		Extra:     errExtra(&ee),
+		Extra:     errExtra(ee),
 		Platform:  "go",
 		Sdk: raven.SdkInfo{
 			Name:    SDK,
@@ -91,8 +92,8 @@ func errExtra(ee *logger.ErrorEvent) (annotations map[string]interface{}) {
 	return
 }
 
-func errRequest(ee logger.ErrorEvent) (requestMeta raven.Request) {
-	if ee.State == nil {
+func errRequest(ee *logger.ErrorEvent) (requestMeta raven.Request) {
+	if ee.State() == nil {
 		return
 	}
 	typed, ok := ee.State().(*http.Request)
