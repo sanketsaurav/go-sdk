@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/blend/go-sdk/assert"
-	"github.com/blend/go-sdk/ex"
+	ex "github.com/blend/go-sdk/exception"
 	"github.com/blend/go-sdk/logger"
 	"github.com/blend/go-sdk/webutil"
 )
@@ -37,17 +37,18 @@ func TestNew(t *testing.T) {
 
 func TestErrEvent(t *testing.T) {
 	assert := assert.New(t)
-
-	event := errEvent(context.Background(), logger.ErrorEvent{
-		Flag: logger.Fatal,
-		Err:  ex.New("this is a test", ex.OptMessage("a message")),
-		State: &http.Request{
-			Method: "POST",
-			Host:   "example.org",
-			TLS:    &tls.ConnectionState{},
-			URL:    webutil.MustParseURL("https://example.org/foo"),
-		},
-	})
+	event := errEvent(
+		context.Background(),
+		*logger.NewErrorEventWithState(
+			logger.Fatal,
+			ex.New("this is a test"),
+			http.Request{
+				Method: "POST",
+				Host:   "example.org",
+				TLS:    &tls.ConnectionState{},
+				URL:    webutil.MustParseURL("https://example.org/foo"),
+			},
+		))
 
 	assert.NotNil(event)
 	assert.NotZero(event.Timestamp)
@@ -66,14 +67,16 @@ func TestErrRequest(t *testing.T) {
 	res := errRequest(logger.ErrorEvent{})
 	assert.Empty(res.URL)
 
-	res = errRequest(logger.ErrorEvent{
-		State: &http.Request{
+	res = errRequest(*logger.NewErrorEventWithState(
+		logger.FlagNone,
+		ex.New("some error"),
+		&http.Request{
 			Method: "POST",
 			Host:   "example.org",
 			TLS:    &tls.ConnectionState{},
 			URL:    webutil.MustParseURL("https://example.org/foo"),
 		},
-	})
+	))
 	assert.Equal("POST", res.Method)
 	assert.Equal("https://example.org/foo", res.URL)
 }
