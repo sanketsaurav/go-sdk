@@ -34,6 +34,7 @@ deps:
 
 dev-deps:
 	@go get -u golang.org/x/lint/golint
+	@go get -d github.com/goreleaser/goreleaser
 
 install-all: install-ask install-bindata install-coverage install-profanity install-reverseproxy install-recover install-semver install-shamir install-template
 
@@ -45,9 +46,6 @@ install-bindata:
 
 install-coverage:
 	@go install github.com/blend/go-sdk/cmd/coverage
-
-install-job:
-	@go install github.com/blend/go-sdk/cmd/job
 
 install-profanity:
 	@go install github.com/blend/go-sdk/cmd/profanity
@@ -107,11 +105,11 @@ test-verbose:
 
 cover:
 	@echo "$(VERSION)/$(GIT_REF) >> coverage"
-	@go run cmd/coverage/main.go --exclude="examples/*"
+	@go run cmd/coverage/main.go --exclude="examples/*,cmd/*" --timeout="10s"
 
 cover-ci:
 	@echo "$(VERSION)/$(GIT_REF) >> coverage"
-	@go run cmd/coverage/main.go --keep-coverage-out --covermode=atomic --coverprofile=coverage.txt --exclude="examples/*"
+	@go run cmd/coverage/main.go --keep-coverage-out --covermode=atomic --coverprofile=coverage.txt --exclude="examples/*,cmd/*" --timeout="10s"
 
 cover-enforce:
 	@echo "$(VERSION)/$(GIT_REF) >> coverage"
@@ -169,9 +167,6 @@ release-bindata:
 
 release-coverage:
 	@goreleaser release -f .goreleaser/coverage.yml
-
-release-job:
-	@goreleaser release -f .goreleaser/job.yml
 
 release-profanity:
 	@goreleaser release -f .goreleaser/profanity.yml
