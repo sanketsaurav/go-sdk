@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"syscall"
@@ -48,10 +47,7 @@ func main() {
 	errorFilters := ex.Filter(
 		ex.FilterIs(syscall.EPIPE),
 		ex.FilterIs(os.ErrNotExist),
-		func(err error) bool {
-			_, ok := err.(*net.OpError)
-			return ok
-		},
+		webutil.IsNetOpError(),
 	)
 	filteredErrorListener := logger.NewErrorEventListener(func(_ context.Context, ee logger.ErrorEvent) {
 		if errorFilters.Any(ee.Err) {
