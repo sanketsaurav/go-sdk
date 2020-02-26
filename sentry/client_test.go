@@ -29,10 +29,10 @@ func TestNew(t *testing.T) {
 		Dist:        "deadbeef",
 	})
 	assert.Nil(err)
-	assert.Equal("test", c.Client.Options().Environment)
-	assert.Equal("go-sdk-server", c.Client.Options().ServerName)
-	assert.Equal("v1.0.0", c.Client.Options().Release)
-	assert.Equal("deadbeef", c.Client.Options().Dist)
+	assert.Equal("test", c.Config.Environment)
+	assert.Equal("go-sdk-server", c.Config.ServerName)
+	assert.Equal("v1.0.0", c.Config.Release)
+	assert.Equal("deadbeef", c.Config.Dist)
 }
 
 func TestErrEvent(t *testing.T) {

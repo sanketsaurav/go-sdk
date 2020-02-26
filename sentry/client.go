@@ -27,45 +27,42 @@ func MustNew(cfg Config) *Client {
 
 // New returns a new client.
 func New(cfg Config) (*Client, error) {
-	rc, err := raven.NewClient(
-		raven.ClientOptions{
-			Dsn:         cfg.DSN,
-			Environment: cfg.EnvironmentOrDefault(),
-			ServerName:  cfg.ServerNameOrDefault(),
-			Dist:        cfg.DistOrDefault(),
-			Release:     cfg.ReleaseOrDefault(),
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
 	return &Client{
 		Config: cfg,
-		Client: rc,
+		xport:  &http.Transport{},
 	}, nil
 }
 
 // Client is a wrapper for the sentry-go client.
 type Client struct {
 	Config Config
-	Client *raven.Client
+	xport  *http.Transport
 }
 
 // Notify sends a notification.
-func (c Client) Notify(ctx context.Context, ee logger.ErrorEvent) {
-	c.Client.CaptureEvent(errEvent(ctx, ee), nil, raven.NewScope())
-	c.Client.Flush(time.Second)
+func (c Client) Notify(ctx context.Context, ee logger.ErrorEvent) error {
+	c.captureEvent(errEvent(ctx, ee))
+	return c.flush(ctx)
+}
+
+func (c Client) captureEvent(event *Event) {
+
+}
+
+func (c Client) flush(ctx context.Context) error {
+
+	return nil
 }
 
 func errEvent(ctx context.Context, ee logger.ErrorEvent) *raven.Event {
-	return &raven.Event{
+	return &Event{
 		Timestamp:   logger.GetEventTimestamp(ctx, ee).Unix(),
 		Fingerprint: errFingerprint(ctx, ex.ErrClass(ee.Err).Error()),
-		Level:       raven.Level(ee.GetFlag()),
+		Level:       Level(ee.GetFlag()),
 		Tags:        errTags(ctx),
 		Extra:       errExtra(ctx),
 		Platform:    "go",
-		Sdk: raven.SdkInfo{
+		Sdk: SdkInfo{
 			Name:    SDK,
 			Version: raven.Version,
 			Packages: []raven.SdkPackage{{
@@ -75,7 +72,7 @@ func errEvent(ctx context.Context, ee logger.ErrorEvent) *raven.Event {
 		},
 		Request: errRequest(ee),
 		Message: ex.ErrClass(ee.Err).Error(),
-		Exception: []raven.Exception{
+		Exception: []Exception{
 			{
 				Type:       ex.ErrClass(ee.Err).Error(),
 				Value:      ex.ErrMessage(ee.Err),
@@ -100,7 +97,7 @@ func errExtra(ctx context.Context) map[string]interface{} {
 	return logger.GetAnnotations(ctx)
 }
 
-func errRequest(ee logger.ErrorEvent) (requestMeta raven.Request) {
+func errRequest(ee logger.ErrorEvent) (requestMeta Request) {
 	if ee.State == nil {
 		return
 	}
@@ -112,30 +109,30 @@ func errRequest(ee logger.ErrorEvent) (requestMeta raven.Request) {
 	return
 }
 
-func errStackTrace(err error) *raven.Stacktrace {
+func errStackTrace(err error) *Stacktrace {
 	if err != nil {
-		return &raven.Stacktrace{Frames: errFrames(err)}
+		return &Stacktrace{Frames: errFrames(err)}
 	}
 	return nil
 }
 
-func errFrames(err error) []raven.Frame {
+func errFrames(err error) []Frame {
 	stacktrace := ex.ErrStackTrace(err)
 	if stacktrace == nil {
-		return []raven.Frame{}
+		return []Frame{}
 	}
 	pointers, ok := stacktrace.(ex.StackPointers)
 	if !ok {
-		return []raven.Frame{}
+		return []Frame{}
 	}
 
-	var output []raven.Frame
+	var output []Frame
 	runtimeFrames := runtime.CallersFrames(pointers)
 
 	for {
 		callerFrame, more := runtimeFrames.Next()
-		output = append([]raven.Frame{
-			raven.NewFrame(callerFrame),
+		output = append([]Frame{
+			NewFrame(callerFrame),
 		}, output...)
 		if !more {
 			break
