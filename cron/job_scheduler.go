@@ -629,7 +629,7 @@ func (js *JobScheduler) withInvocationLogContext(parent context.Context, ji *Job
 }
 
 func (js *JobScheduler) withLogContext(parent context.Context) context.Context {
-	parent = logger.WithPath(parent, js.Name())
+	parent = logger.WithPath(parent, append(logger.GetPath(parent), js.Name())...)
 	if js.Config().ShouldSkipLoggerOutputOrDefault() {
 		parent = logger.WithSkipWrite(parent)
 	}
