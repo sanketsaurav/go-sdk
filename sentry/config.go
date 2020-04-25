@@ -33,8 +33,8 @@ func (c *Config) Resolve(ctx context.Context) error {
 	return configutil.GetEnvVars(ctx).ReadInto(c)
 }
 
-// ServerNameOrDefault returns the server name or a default.
-func (c Config) ServerNameOrDefault() string {
+// ServiceNameOrDefault returns the server name or a default.
+func (c Config) ServiceNameOrDefault() string {
 	if c.ServerName != "" {
 		return c.ServerName
 	}

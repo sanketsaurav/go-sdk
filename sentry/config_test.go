@@ -27,7 +27,7 @@ func TestConfigResolve(t *testing.T) {
 
 	cfg := &Config{}
 	assert.True(cfg.IsZero())
-	assert.Equal("go-sdk-server", cfg.ServerNameOrDefault())
+	assert.Equal("go-sdk-server", cfg.ServiceNameOrDefault())
 	assert.Equal("dev", cfg.EnvironmentOrDefault())
 	assert.Empty(cfg.DistOrDefault())
 	assert.Empty(cfg.ReleaseOrDefault())
