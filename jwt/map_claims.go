@@ -27,7 +27,7 @@ func (m MapClaims) VerifyExpiresAt(cmp int64, req bool) bool {
 		v, _ := exp.Int64()
 		return verifyExp(v, cmp, req)
 	}
-	return req == false
+	return !req
 }
 
 // VerifyIssuedAt compares the iat claim against cmp.
@@ -40,7 +40,7 @@ func (m MapClaims) VerifyIssuedAt(cmp int64, req bool) bool {
 		v, _ := iat.Int64()
 		return verifyIat(v, cmp, req)
 	}
-	return req == false
+	return !req
 }
 
 // VerifyIssuer compares the iss claim against cmp.
@@ -60,7 +60,7 @@ func (m MapClaims) VerifyNotBefore(cmp int64, req bool) bool {
 		v, _ := nbf.Int64()
 		return verifyNbf(v, cmp, req)
 	}
-	return req == false
+	return !req
 }
 
 // Valid validates time based claims "exp, iat, nbf".
@@ -70,15 +70,15 @@ func (m MapClaims) VerifyNotBefore(cmp int64, req bool) bool {
 func (m MapClaims) Valid() error {
 	now := TimeFunc().Unix()
 
-	if m.VerifyExpiresAt(now, false) == false {
+	if !m.VerifyExpiresAt(now, false) {
 		return ex.New(ErrValidationExpired)
 	}
 
-	if m.VerifyIssuedAt(now, false) == false {
+	if !m.VerifyIssuedAt(now, false) {
 		return ex.New(ErrValidationIssued)
 	}
 
-	if m.VerifyNotBefore(now, false) == false {
+	if !m.VerifyNotBefore(now, false) {
 		return ex.New(ErrValidationNotBefore)
 	}
 
